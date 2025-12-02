@@ -1,9 +1,41 @@
 {
   "$schema": "../../../schemas/session.schema.json",
   "project": "CirrusTranslate",
-  "total_sessions": 9,
+  "total_sessions": 10,
   "last_updated": "2025-12-02",
   "sessions": [
+    {
+      "id": "ci-2025-12-02-docker",
+      "project": "CirrusTranslate",
+      "date": "2025-12-02",
+      "summary": "Optimized API Dockerfile with multi-stage build - 10x faster rebuilds, 3-5 min saved per deploy",
+      "topics": [
+        "docker",
+        "performance",
+        "optimization",
+        "dockerfile",
+        "alpine",
+        "multi-stage",
+        "deployment",
+        "pr-231",
+        "issue-200"
+      ],
+      "key_decisions": [],
+      "outcomes": {
+        "completed": []
+      },
+      "learnings": [],
+      "code_changes": {
+        "files_added": [],
+        "files_modified": [
+          ".claude/hooks/on-start.sh",
+          ".claude/settings.local.json"
+        ],
+        "files_deleted": [],
+        "lines_added": 35,
+        "lines_removed": 5
+      }
+    },
     {
       "id": "ci-2025-12-02-project-management",
       "project": "CirrusTranslate",
@@ -282,9 +314,11 @@
     ],
     "optimization": [
       "ct-2025-11-29-memex-design",
-      "ci-2025-12-02-msgpack"
+      "ci-2025-12-02-msgpack",
+      "ci-2025-12-02-docker"
     ],
     "docker": [
+      "ci-2025-12-02-docker",
       "ci-2025-12-02-docker",
       "ci-2025-12-02-docker"
     ],
@@ -318,7 +352,8 @@
       "ci-2025-12-02-msgpack"
     ],
     "performance": [
-      "ci-2025-12-02-msgpack"
+      "ci-2025-12-02-msgpack",
+      "ci-2025-12-02-docker"
     ],
     "cli": [
       "ci-2025-12-02-test"
@@ -355,6 +390,24 @@
     ],
     "issue-tracking": [
       "ci-2025-12-02-project-management"
+    ],
+    "dockerfile": [
+      "ci-2025-12-02-docker"
+    ],
+    "alpine": [
+      "ci-2025-12-02-docker"
+    ],
+    "multi-stage": [
+      "ci-2025-12-02-docker"
+    ],
+    "deployment": [
+      "ci-2025-12-02-docker"
+    ],
+    "pr-231": [
+      "ci-2025-12-02-docker"
+    ],
+    "issue-200": [
+      "ci-2025-12-02-docker"
     ]
   }
 }

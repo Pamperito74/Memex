@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-02T13:17:08.515Z",
+  "u": "2025-12-02T13:31:53.643Z",
   "m": {
     "tp": 3,
-    "ts": 3,
+    "ts": 4,
     "gs": 5
   },
   "g": {
@@ -127,7 +127,7 @@
         "Python"
       ],
       "a": "monorepo",
-      "sc": 3,
+      "sc": 4,
       "u": "2025-12-02",
       "mf": "metadata/projects/CirrusTranslate.json",
       "tp": [
@@ -205,9 +205,76 @@
     },
     "memex": {
       "p": [
-        "DevOps"
+        "DevOps",
+        "CirrusTranslate"
       ],
-      "sc": 0
+      "sc": 2
+    },
+    "architecture": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "memory-system": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "optimization": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "docker": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "devops": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "build": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "test": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "integration": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "search": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "fix": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "topics": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
     }
   },
   "cc": {

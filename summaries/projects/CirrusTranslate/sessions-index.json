@@ -1,9 +1,32 @@
 {
   "$schema": "../../../schemas/session.schema.json",
   "project": "CirrusTranslate",
-  "total_sessions": 4,
+  "total_sessions": 5,
   "last_updated": "2025-12-02",
   "sessions": [
+    {
+      "id": "ci-2025-12-02-docker",
+      "project": "CirrusTranslate",
+      "date": "2025-12-02",
+      "summary": "Test Docker optimization session",
+      "topics": [
+        "docker",
+        "cicd",
+        "build"
+      ],
+      "key_decisions": [],
+      "outcomes": {
+        "completed": []
+      },
+      "learnings": [],
+      "code_changes": {
+        "files_added": [],
+        "files_modified": [],
+        "files_deleted": [],
+        "lines_added": 0,
+        "lines_removed": 0
+      }
+    },
     {
       "id": "ci-2025-12-02-search",
       "project": "CirrusTranslate",
@@ -161,12 +184,14 @@
       "ct-2025-11-29-memex-design"
     ],
     "docker": [
+      "ci-2025-12-02-docker",
       "ci-2025-12-02-docker"
     ],
     "devops": [
       "ci-2025-12-02-docker"
     ],
     "build": [
+      "ci-2025-12-02-docker",
       "ci-2025-12-02-docker"
     ],
     "test": [
@@ -183,6 +208,9 @@
     ],
     "topics": [
       "ci-2025-12-02-search"
+    ],
+    "cicd": [
+      "ci-2025-12-02-docker"
     ]
   }
 }

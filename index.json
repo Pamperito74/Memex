@@ -1,0 +1,226 @@
+{
+  "$schema": "./schemas/index.schema.json",
+  "v": "2.0.0",
+  "u": "2025-11-30T00:00:00Z",
+  "m": {
+    "tp": 3,
+    "ts": 0,
+    "gs": 5
+  },
+  "g": {
+    "cs": {
+      "s": "Conventional Commits: <type>(<scope>): <description>",
+      "t": ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "ci"],
+      "f": "content/global/commit-standards.json",
+      "sz": 2,
+      "qr": {
+        "fmt": "<type>(<scope>): <description>",
+        "ex": "feat(auth): add OAuth2 login",
+        "types": {
+          "feat": "New feature",
+          "fix": "Bug fix",
+          "docs": "Documentation",
+          "style": "Code style",
+          "refactor": "Code refactoring",
+          "test": "Tests",
+          "chore": "Maintenance",
+          "perf": "Performance",
+          "ci": "CI/CD"
+        },
+        "rules": ["imperative", "no_period", "max_72_chars", "lowercase"]
+      }
+    },
+    "pg": {
+      "s": "PR must have: tests, self-review, lint pass, no warnings",
+      "f": "content/global/pr-guidelines.md",
+      "sz": 3,
+      "qr": {
+        "fmt": "<type>(<scope>): <description>",
+        "chk": ["tests", "self-review", "lint", "typecheck", "build"],
+        "appr": 1
+      }
+    },
+    "bs": {
+      "s": "main (prod) → staging (QA) → develop (dev) → feature/*",
+      "f": "content/global/branching-strategy.md",
+      "sz": 2,
+      "qr": {
+        "br": {
+          "main": "Production",
+          "staging": "Pre-production/QA",
+          "develop": "Development",
+          "feature/*": "Feature branches"
+        },
+        "flow": [
+          "Create feature from develop",
+          "PR to develop",
+          "Test in dev",
+          "Promote to staging",
+          "Promote to main"
+        ]
+      }
+    },
+    "cd": {
+      "s": "TypeScript, React patterns, API design, testing",
+      "f": "content/global/code-standards/",
+      "sz": 10,
+      "qr": {
+        "fe": {
+          "comp": "PascalCase",
+          "hooks": "camelCase with 'use' prefix",
+          "files": "kebab-case.tsx"
+        },
+        "be": {
+          "apis": "RESTful design",
+          "errs": "Structured error handling",
+          "val": "Input validation required"
+        }
+      }
+    },
+    "sc": {
+      "s": "OWASP compliance, secrets management, input validation",
+      "f": "content/global/security.md",
+      "sz": 4,
+      "qr": {
+        "chk": [
+          "No secrets in code",
+          "Input validation",
+          "SQL injection prevention",
+          "XSS prevention",
+          "HTTPS only"
+        ]
+      }
+    }
+  },
+  "p": {
+    "CirrusTranslate": {
+      "n": "CirrusTranslate",
+      "r": "git@github.com:Cirrus-Inc/CirrusTranslate.git",
+      "d": "ASL translation platform with automated quoting and workflow orchestration",
+      "ts": ["React", "TypeScript", "NestJS", "PostgreSQL", "Prisma", "Python"],
+      "a": "monorepo",
+      "sc": 0,
+      "u": "2025-11-29",
+      "mf": "metadata/projects/CirrusTranslate.json",
+      "tp": ["auth", "translation", "video", "api", "monorepo"],
+      "qr": {
+        "apps": {
+          "/apps/api/": "NestJS backend",
+          "/apps/web/": "Next.js frontend",
+          "/apps/cirrus-editor/": "Video editor",
+          "/workers/ingestion/": "Python worker"
+        },
+        "env": {
+          "dev": "https://dev.cirrustranslate.com",
+          "stg": "https://staging.cirrustranslate.com",
+          "prd": "https://cirrustranslate.com"
+        },
+        "own": ["@Pamperito74", "@Rhettyoungberg"]
+      }
+    },
+    "DevOps": {
+      "n": "DevOps",
+      "r": "git@github.com:Cirrus-Inc/DevOps.git",
+      "d": "DevOps tools, configurations, and Memex knowledge base",
+      "ts": ["Bash", "KeePass"],
+      "a": "utility",
+      "sc": 0,
+      "u": "2025-11-29",
+      "mf": "metadata/projects/DevOps.json",
+      "tp": ["memex", "credentials", "devops"],
+      "qr": {
+        "syn": "~/code/cirrus/DevOps/Memex",
+        "creds": "monorepo.kdbx"
+      }
+    }
+  },
+  "t": {
+    "auth": {
+      "p": ["CirrusTranslate"],
+      "sc": 0
+    },
+    "translation": {
+      "p": ["CirrusTranslate"],
+      "sc": 0
+    },
+    "video": {
+      "p": ["CirrusTranslate"],
+      "sc": 0
+    },
+    "api": {
+      "p": ["CirrusTranslate"],
+      "sc": 0
+    },
+    "memex": {
+      "p": ["DevOps"],
+      "sc": 0
+    }
+  },
+  "cc": {
+    "hot": 10,
+    "warm": 100,
+    "ttl": 60
+  },
+  "_legend": {
+    "root": {
+      "v": "version",
+      "u": "last_updated",
+      "m": "metadata",
+      "g": "global",
+      "p": "projects",
+      "t": "topics",
+      "cc": "cache_config"
+    },
+    "metadata": {
+      "tp": "total_projects",
+      "ts": "total_sessions",
+      "gs": "global_standards_count"
+    },
+    "global_standards": {
+      "cs": "commit_standards",
+      "pg": "pr_guidelines",
+      "bs": "branching_strategy",
+      "cd": "code_standards",
+      "sc": "security",
+      "s": "summary",
+      "t": "types",
+      "f": "file",
+      "sz": "size_kb",
+      "qr": "quick_ref"
+    },
+    "quick_ref": {
+      "fmt": "format",
+      "ex": "example",
+      "chk": "checks",
+      "appr": "approval_count",
+      "br": "branches",
+      "fe": "frontend",
+      "be": "backend",
+      "comp": "components",
+      "own": "owners",
+      "env": "environments",
+      "syn": "memex_location",
+      "creds": "credentials"
+    },
+    "projects": {
+      "n": "name",
+      "r": "repo",
+      "d": "description",
+      "ts": "tech_stack",
+      "a": "architecture",
+      "sc": "session_count",
+      "u": "last_updated",
+      "mf": "metadata_file",
+      "tp": "topics"
+    },
+    "topics": {
+      "p": "projects",
+      "sc": "session_count"
+    },
+    "cache_config": {
+      "hot": "hot_cache_size",
+      "warm": "warm_cache_size",
+      "ttl": "cache_ttl_minutes"
+    }
+  }
+}

@@ -1,9 +1,32 @@
 {
   "$schema": "../../../schemas/session.schema.json",
   "project": "CirrusTranslate",
-  "total_sessions": 5,
+  "total_sessions": 6,
   "last_updated": "2025-12-02",
   "sessions": [
+    {
+      "id": "ci-2025-12-02-msgpack",
+      "project": "CirrusTranslate",
+      "date": "2025-12-02",
+      "summary": "MessagePack v3.1 testing",
+      "topics": [
+        "msgpack",
+        "performance",
+        "optimization"
+      ],
+      "key_decisions": [],
+      "outcomes": {
+        "completed": []
+      },
+      "learnings": [],
+      "code_changes": {
+        "files_added": [],
+        "files_modified": [],
+        "files_deleted": [],
+        "lines_added": 0,
+        "lines_removed": 0
+      }
+    },
     {
       "id": "ci-2025-12-02-docker",
       "project": "CirrusTranslate",
@@ -181,7 +204,8 @@
       "ct-2025-11-29-memex-design"
     ],
     "optimization": [
-      "ct-2025-11-29-memex-design"
+      "ct-2025-11-29-memex-design",
+      "ci-2025-12-02-msgpack"
     ],
     "docker": [
       "ci-2025-12-02-docker",
@@ -211,6 +235,12 @@
     ],
     "cicd": [
       "ci-2025-12-02-docker"
+    ],
+    "msgpack": [
+      "ci-2025-12-02-msgpack"
+    ],
+    "performance": [
+      "ci-2025-12-02-msgpack"
     ]
   }
 }

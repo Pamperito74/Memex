@@ -1,16 +1,26 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-11-30T00:00:00Z",
+  "u": "2025-12-02T13:17:08.515Z",
   "m": {
     "tp": 3,
-    "ts": 0,
+    "ts": 3,
     "gs": 5
   },
   "g": {
     "cs": {
       "s": "Conventional Commits: <type>(<scope>): <description>",
-      "t": ["feat", "fix", "docs", "style", "refactor", "test", "chore", "perf", "ci"],
+      "t": [
+        "feat",
+        "fix",
+        "docs",
+        "style",
+        "refactor",
+        "test",
+        "chore",
+        "perf",
+        "ci"
+      ],
       "f": "content/global/commit-standards.json",
       "sz": 2,
       "qr": {
@@ -27,7 +37,12 @@
           "perf": "Performance",
           "ci": "CI/CD"
         },
-        "rules": ["imperative", "no_period", "max_72_chars", "lowercase"]
+        "rules": [
+          "imperative",
+          "no_period",
+          "max_72_chars",
+          "lowercase"
+        ]
       }
     },
     "pg": {
@@ -36,7 +51,13 @@
       "sz": 3,
       "qr": {
         "fmt": "<type>(<scope>): <description>",
-        "chk": ["tests", "self-review", "lint", "typecheck", "build"],
+        "chk": [
+          "tests",
+          "self-review",
+          "lint",
+          "typecheck",
+          "build"
+        ],
         "appr": 1
       }
     },
@@ -97,12 +118,25 @@
       "n": "CirrusTranslate",
       "r": "git@github.com:Cirrus-Inc/CirrusTranslate.git",
       "d": "ASL translation platform with automated quoting and workflow orchestration",
-      "ts": ["React", "TypeScript", "NestJS", "PostgreSQL", "Prisma", "Python"],
+      "ts": [
+        "React",
+        "TypeScript",
+        "NestJS",
+        "PostgreSQL",
+        "Prisma",
+        "Python"
+      ],
       "a": "monorepo",
-      "sc": 0,
-      "u": "2025-11-29",
+      "sc": 3,
+      "u": "2025-12-02",
       "mf": "metadata/projects/CirrusTranslate.json",
-      "tp": ["auth", "translation", "video", "api", "monorepo"],
+      "tp": [
+        "auth",
+        "translation",
+        "video",
+        "api",
+        "monorepo"
+      ],
       "qr": {
         "apps": {
           "/apps/api/": "NestJS backend",
@@ -115,19 +149,29 @@
           "stg": "https://staging.cirrustranslate.com",
           "prd": "https://cirrustranslate.com"
         },
-        "own": ["@Pamperito74", "@Rhettyoungberg"]
+        "own": [
+          "@Pamperito74",
+          "@Rhettyoungberg"
+        ]
       }
     },
     "DevOps": {
       "n": "DevOps",
       "r": "git@github.com:Cirrus-Inc/DevOps.git",
       "d": "DevOps tools, configurations, and Memex knowledge base",
-      "ts": ["Bash", "KeePass"],
+      "ts": [
+        "Bash",
+        "KeePass"
+      ],
       "a": "utility",
       "sc": 0,
       "u": "2025-11-29",
       "mf": "metadata/projects/DevOps.json",
-      "tp": ["memex", "credentials", "devops"],
+      "tp": [
+        "memex",
+        "credentials",
+        "devops"
+      ],
       "qr": {
         "syn": "~/code/cirrus/DevOps/Memex",
         "creds": "monorepo.kdbx"
@@ -136,23 +180,33 @@
   },
   "t": {
     "auth": {
-      "p": ["CirrusTranslate"],
+      "p": [
+        "CirrusTranslate"
+      ],
       "sc": 0
     },
     "translation": {
-      "p": ["CirrusTranslate"],
+      "p": [
+        "CirrusTranslate"
+      ],
       "sc": 0
     },
     "video": {
-      "p": ["CirrusTranslate"],
+      "p": [
+        "CirrusTranslate"
+      ],
       "sc": 0
     },
     "api": {
-      "p": ["CirrusTranslate"],
+      "p": [
+        "CirrusTranslate"
+      ],
       "sc": 0
     },
     "memex": {
-      "p": ["DevOps"],
+      "p": [
+        "DevOps"
+      ],
       "sc": 0
     }
   },

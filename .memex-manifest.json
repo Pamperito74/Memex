@@ -1,27 +1,43 @@
 {
   "version": "3.2.0",
-  "generated_at": "2025-12-02T10:35:00.000Z",
+  "generated_at": "2025-12-02T16:34:32.027Z",
   "files": {
     "index.json": {
-      "hash": "",
-      "size": 0,
-      "mtime": 0
+      "hash": "9199d30def9039b6",
+      "size": 7490,
+      "mtime": 1764693184431.3074
     },
     "index.json.gz": {
-      "hash": "",
-      "size": 0,
-      "mtime": 0
+      "hash": "5abcb079197235ed",
+      "size": 1932,
+      "mtime": 1764501135654.2927
     },
     "index.msgpack": {
-      "hash": "",
-      "size": 0,
-      "mtime": 0
+      "hash": "8042882d7f5a221e",
+      "size": 3662,
+      "mtime": 1764683704654.0112
+    },
+    "metadata/projects/CirrusTranslate.json": {
+      "hash": "b1458cd60cee0e02",
+      "size": 4106,
+      "mtime": 1764558564305.4692
+    },
+    "summaries/projects/CirrusTranslate/sessions-index.json": {
+      "hash": "d012c0dbef0c5bb9",
+      "size": 6707,
+      "mtime": 1764693184430.6443
+    },
+    "content/global/commit-standards.json": {
+      "hash": "4ba2bfff7a753fc7",
+      "size": 4488,
+      "mtime": 1764558564300.5474
     }
   },
   "stats": {
-    "total_files": 0,
-    "total_size_bytes": 0,
-    "projects": 0,
-    "sessions": 0
-  }
+    "total_files": 6,
+    "total_size_bytes": 28385,
+    "projects": 1,
+    "sessions": 1
+  },
+  "generation_time_ms": 10
 }

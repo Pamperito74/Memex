@@ -176,6 +176,32 @@
         "syn": "~/code/cirrus/DevOps/Memex",
         "creds": "monorepo.kdbx"
       }
+    },
+    "Memex": {
+      "n": "Memex",
+      "r": "git@github.com:Cirrus-Inc/Memex.git",
+      "d": "Extended memory system for Claude - token-optimized knowledge base",
+      "ts": [
+        "Node.js",
+        "JavaScript"
+      ],
+      "a": "library",
+      "sc": 0,
+      "u": "2025-12-03",
+      "mf": "metadata/projects/Memex.json",
+      "tp": [
+        "memex",
+        "optimization",
+        "knowledge-base"
+      ],
+      "qr": {
+        "features": {
+          "lazy-loading": "64% smaller index",
+          "bloom-filter": "500-1000x faster negative queries",
+          "git-hooks": "Zero-effort session capture"
+        },
+        "version": "3.3.0"
+      }
     }
   },
   "t": {

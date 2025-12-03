@@ -1,14 +1,15 @@
 {
   "$schema": "../../../schemas/session.schema.json",
   "project": "Memex",
-  "total_sessions": 2,
+  "total_sessions": 3,
   "last_updated": "2025-12-03",
   "topics_index": {
     "cleanup": [
       "memex-2025-12-02-cleanup"
     ],
     "docs": [
-      "memex-2025-12-02-cleanup"
+      "memex-2025-12-02-cleanup",
+      "me-2025-12-03-docs"
     ],
     "bloom-filter": [
       "memex-2025-12-02-cleanup"
@@ -27,9 +28,40 @@
     ],
     "project-detection": [
       "me-2025-12-03-bugfix"
+    ],
+    "examples": [
+      "me-2025-12-03-docs"
+    ],
+    "quickstart": [
+      "me-2025-12-03-docs"
     ]
   },
   "sessions": [
+    {
+      "id": "me-2025-12-03-docs",
+      "project": "Memex",
+      "date": "2025-12-03",
+      "summary": "Add",
+      "topics": [
+        "docs",
+        "examples",
+        "quickstart"
+      ],
+      "key_decisions": [],
+      "outcomes": {
+        "completed": []
+      },
+      "learnings": [],
+      "code_changes": {
+        "files_added": [],
+        "files_modified": [
+          "QUICKSTART.md"
+        ],
+        "files_deleted": [],
+        "lines_added": 145,
+        "lines_removed": 0
+      }
+    },
     {
       "id": "me-2025-12-03-bugfix",
       "project": "Memex",

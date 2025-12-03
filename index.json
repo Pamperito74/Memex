@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-03T14:14:27.972Z",
+  "u": "2025-12-03T14:28:15.614Z",
   "m": {
     "tp": 3,
-    "ts": 14,
+    "ts": 15,
     "gs": 5
   },
   "g": {
@@ -186,7 +186,7 @@
         "JavaScript"
       ],
       "a": "library",
-      "sc": 2,
+      "sc": 3,
       "u": "2025-12-03",
       "mf": "metadata/projects/Memex.json",
       "tp": [
@@ -492,7 +492,7 @@
       "p": [
         "Memex"
       ],
-      "sc": 1
+      "sc": 2
     },
     "bloom-filter": {
       "p": [
@@ -525,6 +525,18 @@
       "sc": 1
     },
     "project-detection": {
+      "p": [
+        "Memex"
+      ],
+      "sc": 1
+    },
+    "examples": {
+      "p": [
+        "Memex"
+      ],
+      "sc": 1
+    },
+    "quickstart": {
       "p": [
         "Memex"
       ],

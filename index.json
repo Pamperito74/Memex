@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-02T22:29:49.220Z",
+  "u": "2025-12-03T00:37:45.466Z",
   "m": {
     "tp": 3,
-    "ts": 11,
+    "ts": 12,
     "gs": 5
   },
   "g": {
@@ -127,8 +127,8 @@
         "Python"
       ],
       "a": "monorepo",
-      "sc": 11,
-      "u": "2025-12-02",
+      "sc": 12,
+      "u": "2025-12-03",
       "mf": "metadata/projects/CirrusTranslate.json",
       "tp": [
         "auth",
@@ -232,7 +232,7 @@
       "p": [
         "CirrusTranslate"
       ],
-      "sc": 3
+      "sc": 4
     },
     "devops": {
       "p": [
@@ -388,7 +388,7 @@
       "p": [
         "CirrusTranslate"
       ],
-      "sc": 1
+      "sc": 2
     },
     "pr-231": {
       "p": [
@@ -427,6 +427,30 @@
       "sc": 1
     },
     "pr-232": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "hotfix": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "prisma": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "production": {
+      "p": [
+        "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "pr-233": {
       "p": [
         "CirrusTranslate"
       ],

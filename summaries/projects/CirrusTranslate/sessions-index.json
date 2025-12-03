@@ -1,9 +1,35 @@
 {
   "$schema": "../../../schemas/session.schema.json",
   "project": "CirrusTranslate",
-  "total_sessions": 11,
-  "last_updated": "2025-12-02",
+  "total_sessions": 12,
+  "last_updated": "2025-12-03",
   "sessions": [
+    {
+      "id": "ci-2025-12-03-hotfix",
+      "project": "CirrusTranslate",
+      "date": "2025-12-03",
+      "summary": "HOTFIX: Fixed deployment failure by moving Prisma CLI to dependencies for production migrations",
+      "topics": [
+        "hotfix",
+        "docker",
+        "prisma",
+        "deployment",
+        "production",
+        "pr-233"
+      ],
+      "key_decisions": [],
+      "outcomes": {
+        "completed": []
+      },
+      "learnings": [],
+      "code_changes": {
+        "files_added": [],
+        "files_modified": [],
+        "files_deleted": [],
+        "lines_added": 0,
+        "lines_removed": 0
+      }
+    },
     {
       "id": "ci-2025-12-02-memex",
       "project": "CirrusTranslate",
@@ -347,7 +373,8 @@
     "docker": [
       "ci-2025-12-02-docker",
       "ci-2025-12-02-docker",
-      "ci-2025-12-02-docker"
+      "ci-2025-12-02-docker",
+      "ci-2025-12-03-hotfix"
     ],
     "devops": [
       "ci-2025-12-02-docker"
@@ -428,7 +455,8 @@
       "ci-2025-12-02-docker"
     ],
     "deployment": [
-      "ci-2025-12-02-docker"
+      "ci-2025-12-02-docker",
+      "ci-2025-12-03-hotfix"
     ],
     "pr-231": [
       "ci-2025-12-02-docker"
@@ -450,6 +478,18 @@
     ],
     "pr-232": [
       "ci-2025-12-02-memex"
+    ],
+    "hotfix": [
+      "ci-2025-12-03-hotfix"
+    ],
+    "prisma": [
+      "ci-2025-12-03-hotfix"
+    ],
+    "production": [
+      "ci-2025-12-03-hotfix"
+    ],
+    "pr-233": [
+      "ci-2025-12-03-hotfix"
     ]
   }
 }

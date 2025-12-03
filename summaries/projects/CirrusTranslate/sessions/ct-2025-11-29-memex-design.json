@@ -1,0 +1,75 @@
+{
+  "id": "ct-2025-11-29-memex-design",
+  "project": "CirrusTranslate",
+  "date": "2025-11-29",
+  "summary": "Designed Memex memory system with three-tier architecture and token-efficient loading",
+  "topics": [
+    "memex",
+    "architecture",
+    "memory-system",
+    "optimization"
+  ],
+  "key_decisions": [
+    {
+      "decision": "Use index-first architecture with on-demand content loading",
+      "rationale": "Reduces token usage by 95% - load 5KB index instead of 500KB content",
+      "alternatives": [
+        "Load all content upfront (rejected: too slow, token-heavy)",
+        "No indexing, search on-demand (rejected: requires loading all files)"
+      ]
+    },
+    {
+      "decision": "Three-tier knowledge system: Global, Project-Specific, Cross-Project",
+      "rationale": "Separates universal standards from project-specific context, enables cross-project learning",
+      "alternatives": [
+        "Flat structure (rejected: hard to organize)",
+        "Per-project only (rejected: duplicates standards)"
+      ]
+    },
+    {
+      "decision": "Use JSON for metadata, Markdown for full content",
+      "rationale": "JSON is fast to parse, Markdown is human-readable for editing",
+      "alternatives": [
+        "All Markdown (rejected: slow to parse, no structure)",
+        "All JSON (rejected: hard for humans to edit long content)"
+      ]
+    }
+  ],
+  "code_changes": {
+    "files_added": [
+      "Memex/index.json",
+      "Memex/metadata/projects/CirrusTranslate.json",
+      "Memex/scripts/memex-loader.js",
+      "Memex/schemas/session.schema.json",
+      "Memex/content/global/commit-standards.md"
+    ],
+    "lines_added": 800
+  },
+  "outcomes": {
+    "completed": [
+      "Created Memex index schema",
+      "Built token-efficient loader",
+      "Designed session storage format",
+      "Extracted CirrusTranslate metadata"
+    ]
+  },
+  "learnings": [
+    {
+      "insight": "Claude works best with structured data (JSON) for metadata and prose (Markdown) for detailed content",
+      "application": "Always provide quick_ref in index for common queries, load full content only when needed"
+    },
+    {
+      "insight": "80% of questions can be answered from index alone without loading files",
+      "application": "Design index with sufficient detail for common queries (commit format, PR requirements, etc.)"
+    },
+    {
+      "insight": "Vector embeddings enable semantic search without loading all content",
+      "application": "Generate embeddings for all sessions, search by similarity instead of keywords"
+    }
+  ],
+  "related_sessions": [],
+  "content_file": "content/projects/CirrusTranslate/sessions/2025-11-29-memex-design.md",
+  "_lazy_loaded": true,
+  "_index_size_bytes": 246,
+  "_full_size_bytes": 2250
+}

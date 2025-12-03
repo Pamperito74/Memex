@@ -1,14 +1,74 @@
 {
+  "$schema": "../../../schemas/session.schema.json",
   "project": "Memex",
-  "updated": "2025-12-02",
-  "total_sessions": 1,
+  "total_sessions": 2,
+  "last_updated": "2025-12-03",
+  "topics_index": {
+    "cleanup": [
+      "memex-2025-12-02-cleanup"
+    ],
+    "docs": [
+      "memex-2025-12-02-cleanup"
+    ],
+    "bloom-filter": [
+      "memex-2025-12-02-cleanup"
+    ],
+    "security": [
+      "memex-2025-12-02-cleanup"
+    ],
+    "maintenance": [
+      "memex-2025-12-02-cleanup"
+    ],
+    "bugfix": [
+      "me-2025-12-03-bugfix"
+    ],
+    "cache": [
+      "me-2025-12-03-bugfix"
+    ],
+    "project-detection": [
+      "me-2025-12-03-bugfix"
+    ]
+  },
   "sessions": [
+    {
+      "id": "me-2025-12-03-bugfix",
+      "project": "Memex",
+      "date": "2025-12-03",
+      "summary": "Fix",
+      "topics": [
+        "bugfix",
+        "cache",
+        "project-detection"
+      ],
+      "key_decisions": [],
+      "outcomes": {
+        "completed": []
+      },
+      "learnings": [],
+      "code_changes": {
+        "files_added": [],
+        "files_modified": [
+          "index.msgpack",
+          "scripts/memex-loader.js",
+          "summaries/projects/Memex/sessions-index.json"
+        ],
+        "files_deleted": [],
+        "lines_added": 10,
+        "lines_removed": 2
+      }
+    },
     {
       "id": "memex-2025-12-02-cleanup",
       "project": "Memex",
       "date": "2025-12-02",
       "summary": "Repository cleanup and bloom filter security review",
-      "topics": ["cleanup", "docs", "bloom-filter", "security", "maintenance"],
+      "topics": [
+        "cleanup",
+        "docs",
+        "bloom-filter",
+        "security",
+        "maintenance"
+      ],
       "key_decisions": [
         "Removed 8 obsolete documentation files (2,278 lines)",
         "Updated .gitignore to exclude generated cache files",

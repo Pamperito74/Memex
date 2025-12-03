@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-03T00:37:45.466Z",
+  "u": "2025-12-03T14:14:27.972Z",
   "m": {
     "tp": 3,
-    "ts": 12,
+    "ts": 14,
     "gs": 5
   },
   "g": {
@@ -186,7 +186,7 @@
         "JavaScript"
       ],
       "a": "library",
-      "sc": 0,
+      "sc": 2,
       "u": "2025-12-03",
       "mf": "metadata/projects/Memex.json",
       "tp": [
@@ -479,6 +479,54 @@
     "pr-233": {
       "p": [
         "CirrusTranslate"
+      ],
+      "sc": 1
+    },
+    "cleanup": {
+      "p": [
+        "Memex"
+      ],
+      "sc": 1
+    },
+    "docs": {
+      "p": [
+        "Memex"
+      ],
+      "sc": 1
+    },
+    "bloom-filter": {
+      "p": [
+        "Memex"
+      ],
+      "sc": 1
+    },
+    "security": {
+      "p": [
+        "Memex"
+      ],
+      "sc": 1
+    },
+    "maintenance": {
+      "p": [
+        "Memex"
+      ],
+      "sc": 1
+    },
+    "bugfix": {
+      "p": [
+        "Memex"
+      ],
+      "sc": 1
+    },
+    "cache": {
+      "p": [
+        "Memex"
+      ],
+      "sc": 1
+    },
+    "project-detection": {
+      "p": [
+        "Memex"
       ],
       "sc": 1
     }

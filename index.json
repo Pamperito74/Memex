@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-04T15:58:50.494Z",
+  "u": "2025-12-04T16:05:10.625Z",
   "m": {
     "tp": 4,
-    "ts": 41,
+    "ts": 42,
     "gs": 5
   },
   "g": {
@@ -213,7 +213,7 @@
         "i18next"
       ],
       "a": "spa",
-      "sc": 19,
+      "sc": 20,
       "u": "2025-12-04",
       "mf": "metadata/projects/translate.hellocirrus.json",
       "tp": [
@@ -553,7 +553,7 @@
         "translate.hellocirrus",
         "DevOps"
       ],
-      "sc": 4
+      "sc": 5
     },
     "bloom-filter": {
       "p": [
@@ -653,7 +653,7 @@
         "translate.hellocirrus",
         "DevOps"
       ],
-      "sc": 3
+      "sc": 4
     },
     "git-hooks": {
       "p": [

@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-04T10:55:28.723Z",
+  "u": "2025-12-04T10:56:41.102Z",
   "m": {
     "tp": 4,
-    "ts": 18,
+    "ts": 19,
     "gs": 5
   },
   "g": {
@@ -213,7 +213,7 @@
         "i18next"
       ],
       "a": "spa",
-      "sc": 1,
+      "sc": 2,
       "u": "2025-12-04",
       "mf": "metadata/projects/translate.hellocirrus.json",
       "tp": [
@@ -549,7 +549,7 @@
         "Memex",
         "translate.hellocirrus"
       ],
-      "sc": 1
+      "sc": 2
     },
     "bloom-filter": {
       "p": [
@@ -640,6 +640,12 @@
     "milestone": {
       "p": [
         "Memex"
+      ],
+      "sc": 1
+    },
+    "": {
+      "p": [
+        "translate.hellocirrus"
       ],
       "sc": 1
     }

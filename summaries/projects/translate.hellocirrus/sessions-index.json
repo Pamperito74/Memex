@@ -1,8 +1,31 @@
 {
   "project": "translate.hellocirrus",
   "last_updated": "2025-12-04",
-  "total_sessions": 21,
+  "total_sessions": 22,
   "sessions": [
+    {
+      "id": "tr-2025-12-04-session",
+      "project": "translate.hellocirrus",
+      "date": "2025-12-04",
+      "summary": "fix: translation improvements and UX enhancements (#37)",
+      "topics": [],
+      "key_decisions": [],
+      "outcomes": {
+        "completed": []
+      },
+      "learnings": [],
+      "code_changes": {
+        "files_added": [],
+        "files_modified": [
+          ".DS_Store",
+          ".claude/settings.local.json",
+          "package.json"
+        ],
+        "files_deleted": [],
+        "lines_added": 16,
+        "lines_removed": 2
+      }
+    },
     {
       "id": "tr-2025-12-04-session",
       "project": "translate.hellocirrus",

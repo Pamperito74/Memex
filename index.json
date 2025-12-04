@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-04T11:12:21.429Z",
+  "u": "2025-12-04T11:17:22.235Z",
   "m": {
     "tp": 4,
-    "ts": 21,
+    "ts": 22,
     "gs": 5
   },
   "g": {
@@ -164,7 +164,7 @@
         "KeePass"
       ],
       "a": "utility",
-      "sc": 1,
+      "sc": 2,
       "u": "2025-12-04",
       "mf": "metadata/projects/DevOps.json",
       "tp": [
@@ -648,11 +648,18 @@
     },
     "": {
       "p": [
-        "translate.hellocirrus"
+        "translate.hellocirrus",
+        "DevOps"
       ],
       "sc": 1
     },
     "git-hooks": {
+      "p": [
+        "DevOps"
+      ],
+      "sc": 1
+    },
+    "chore": {
       "p": [
         "DevOps"
       ],

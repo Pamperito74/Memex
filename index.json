@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-04T10:56:41.102Z",
+  "u": "2025-12-04T11:10:51.420Z",
   "m": {
     "tp": 4,
-    "ts": 19,
+    "ts": 20,
     "gs": 5
   },
   "g": {
@@ -164,8 +164,8 @@
         "KeePass"
       ],
       "a": "utility",
-      "sc": 0,
-      "u": "2025-11-29",
+      "sc": 1,
+      "u": "2025-12-04",
       "mf": "metadata/projects/DevOps.json",
       "tp": [
         "memex",
@@ -329,9 +329,10 @@
     },
     "test": {
       "p": [
-        "CirrusTranslate"
+        "CirrusTranslate",
+        "DevOps"
       ],
-      "sc": 2
+      "sc": 1
     },
     "integration": {
       "p": [
@@ -547,9 +548,10 @@
     "docs": {
       "p": [
         "Memex",
-        "translate.hellocirrus"
+        "translate.hellocirrus",
+        "DevOps"
       ],
-      "sc": 2
+      "sc": 1
     },
     "bloom-filter": {
       "p": [
@@ -603,7 +605,8 @@
     "testing": {
       "p": [
         "Memex",
-        "translate.hellocirrus"
+        "translate.hellocirrus",
+        "DevOps"
       ],
       "sc": 1
     },
@@ -646,6 +649,12 @@
     "": {
       "p": [
         "translate.hellocirrus"
+      ],
+      "sc": 1
+    },
+    "git-hooks": {
+      "p": [
+        "DevOps"
       ],
       "sc": 1
     }

@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-03T15:10:36.126Z",
+  "u": "2025-12-04T10:55:28.723Z",
   "m": {
-    "tp": 3,
-    "ts": 17,
+    "tp": 4,
+    "ts": 18,
     "gs": 5
   },
   "g": {
@@ -202,6 +202,42 @@
         },
         "version": "3.3.0"
       }
+    },
+    "translate.hellocirrus": {
+      "n": "translate.hellocirrus",
+      "r": "https://github.com/Cirrus-Inc/translate.hellocirrus.git",
+      "d": "Marketing website for CirrusTranslate with multilingual support",
+      "ts": [
+        "Vite",
+        "JavaScript",
+        "i18next"
+      ],
+      "a": "spa",
+      "sc": 1,
+      "u": "2025-12-04",
+      "mf": "metadata/projects/translate.hellocirrus.json",
+      "tp": [
+        "i18n",
+        "translation",
+        "marketing",
+        "website"
+      ],
+      "qr": {
+        "url": "https://translate.hellocirrus.com",
+        "langs": [
+          "en",
+          "es",
+          "fr",
+          "de",
+          "zh",
+          "ja",
+          "pt"
+        ],
+        "scripts": {
+          "translate": "npm run translate",
+          "validate": "npm run validate:translations"
+        }
+      }
     }
   },
   "t": {
@@ -213,7 +249,26 @@
     },
     "translation": {
       "p": [
-        "CirrusTranslate"
+        "CirrusTranslate",
+        "translate.hellocirrus"
+      ],
+      "sc": 0
+    },
+    "i18n": {
+      "p": [
+        "translate.hellocirrus"
+      ],
+      "sc": 0
+    },
+    "marketing": {
+      "p": [
+        "translate.hellocirrus"
+      ],
+      "sc": 0
+    },
+    "website": {
+      "p": [
+        "translate.hellocirrus"
       ],
       "sc": 0
     },
@@ -491,9 +546,10 @@
     },
     "docs": {
       "p": [
-        "Memex"
+        "Memex",
+        "translate.hellocirrus"
       ],
-      "sc": 3
+      "sc": 1
     },
     "bloom-filter": {
       "p": [
@@ -515,7 +571,8 @@
     },
     "bugfix": {
       "p": [
-        "Memex"
+        "Memex",
+        "translate.hellocirrus"
       ],
       "sc": 1
     },
@@ -545,7 +602,8 @@
     },
     "testing": {
       "p": [
-        "Memex"
+        "Memex",
+        "translate.hellocirrus"
       ],
       "sc": 1
     },

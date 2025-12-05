@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-05T02:33:38.699Z",
+  "u": "2025-12-05T02:43:45.397Z",
   "m": {
     "tp": 4,
-    "ts": 54,
+    "ts": 55,
     "gs": 5
   },
   "g": {
@@ -213,7 +213,7 @@
         "i18next"
       ],
       "a": "spa",
-      "sc": 32,
+      "sc": 33,
       "u": "2025-12-05",
       "mf": "metadata/projects/translate.hellocirrus.json",
       "tp": [
@@ -361,7 +361,8 @@
     },
     "cicd": {
       "p": [
-        "CirrusTranslate"
+        "CirrusTranslate",
+        "translate.hellocirrus"
       ],
       "sc": 1
     },
@@ -653,7 +654,7 @@
         "translate.hellocirrus",
         "DevOps"
       ],
-      "sc": 10
+      "sc": 11
     },
     "git-hooks": {
       "p": [

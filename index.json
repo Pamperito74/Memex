@@ -152,7 +152,12 @@
         "own": [
           "@Pamperito74",
           "@Rhettyoungberg"
-        ]
+        ],
+        "deploy": {
+          "stg": "git checkout staging && git merge origin/develop && git push origin staging",
+          "prd": "git checkout main && git merge origin/staging && git push origin main",
+          "guide": "docs/deployment-guide.md"
+        }
       }
     },
     "DevOps": {

@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-05T16:28:09.352Z",
+  "u": "2025-12-05T16:34:45.318Z",
   "m": {
     "tp": 4,
-    "ts": 81,
+    "ts": 82,
     "gs": 5
   },
   "g": {
@@ -154,9 +154,10 @@
           "@Rhettyoungberg"
         ],
         "deploy": {
-          "stg": "git checkout staging && git merge origin/develop && git push origin staging",
+          "stg": "git fetch origin && git checkout staging && git reset --hard origin/develop && git push --force origin staging",
           "prd": "git checkout main && git merge origin/staging && git push origin main",
-          "guide": "docs/deployment-guide.md"
+          "guide": "docs/deployment-guide.md",
+          "note": "DO auto-deploy may need manual trigger"
         }
       }
     },
@@ -218,7 +219,7 @@
         "i18next"
       ],
       "a": "spa",
-      "sc": 59,
+      "sc": 60,
       "u": "2025-12-05",
       "mf": "metadata/projects/translate.hellocirrus.json",
       "tp": [

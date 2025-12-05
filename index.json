@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-05T11:13:05.634Z",
+  "u": "2025-12-05T11:39:51.513Z",
   "m": {
     "tp": 4,
-    "ts": 64,
+    "ts": 65,
     "gs": 5
   },
   "g": {
@@ -213,7 +213,7 @@
         "i18next"
       ],
       "a": "spa",
-      "sc": 42,
+      "sc": 43,
       "u": "2025-12-05",
       "mf": "metadata/projects/translate.hellocirrus.json",
       "tp": [

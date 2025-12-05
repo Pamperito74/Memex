@@ -11,19 +11,7 @@
       "topics": [
         "",
         "feat"
-      ],
-      "key_decisions": [],
-      "outcomes": {
-        "completed": []
-      },
-      "learnings": [],
-      "code_changes": {
-        "files_added": [],
-        "files_modified": [],
-        "files_deleted": [],
-        "lines_added": 0,
-        "lines_removed": 0
-      }
+      ]
     },
     {
       "id": "de-2025-12-04-session",
@@ -34,21 +22,7 @@
         "",
         "docs",
         "feat"
-      ],
-      "key_decisions": [],
-      "outcomes": {
-        "completed": []
-      },
-      "learnings": [],
-      "code_changes": {
-        "files_added": [],
-        "files_modified": [
-          ".claude/settings.local.json"
-        ],
-        "files_deleted": [],
-        "lines_added": 8,
-        "lines_removed": 1
-      }
+      ]
     },
     {
       "id": "de-2025-12-04-memex",
@@ -63,21 +37,7 @@
         "cross-project",
         "knowledge-base",
         "implementation"
-      ],
-      "key_decisions": [],
-      "outcomes": {
-        "completed": []
-      },
-      "learnings": [],
-      "code_changes": {
-        "files_added": [],
-        "files_modified": [
-          ".claude/settings.local.json"
-        ],
-        "files_deleted": [],
-        "lines_added": 8,
-        "lines_removed": 1
-      }
+      ]
     },
     {
       "id": "de-2025-12-04-session",
@@ -88,21 +48,7 @@
         "",
         "chore",
         "docs"
-      ],
-      "key_decisions": [],
-      "outcomes": {
-        "completed": []
-      },
-      "learnings": [],
-      "code_changes": {
-        "files_added": [],
-        "files_modified": [
-          ".claude/settings.local.json"
-        ],
-        "files_deleted": [],
-        "lines_added": 8,
-        "lines_removed": 1
-      }
+      ]
     },
     {
       "id": "de-2025-12-04-docs",
@@ -114,21 +60,7 @@
         "git-hooks",
         "test",
         "testing"
-      ],
-      "key_decisions": [],
-      "outcomes": {
-        "completed": []
-      },
-      "learnings": [],
-      "code_changes": {
-        "files_added": [],
-        "files_modified": [
-          ".claude/settings.local.json"
-        ],
-        "files_deleted": [],
-        "lines_added": 6,
-        "lines_removed": 1
-      }
+      ]
     }
   ],
   "topics_index": {
@@ -177,5 +109,7 @@
       "de-2025-12-04-session",
       "de-2025-12-04-session"
     ]
-  }
+  },
+  "_lazy_loading_enabled": true,
+  "_session_details_path": "sessions/{id}.json"
 }

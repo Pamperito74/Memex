@@ -1,10 +1,10 @@
 {
   "$schema": "./schemas/index.schema.json",
   "v": "2.0.0",
-  "u": "2025-12-06T11:56:53.238Z",
+  "u": "2025-12-06T12:16:37.176Z",
   "m": {
     "tp": 4,
-    "ts": 89,
+    "ts": 90,
     "gs": 5
   },
   "g": {
@@ -161,11 +161,23 @@
         },
         "branch_naming": {
           "pattern": "^(feature|fix|hotfix|release|chore)/[a-z0-9._-]+",
-          "prefixes": ["feature/", "fix/", "hotfix/", "release/", "chore/"],
+          "prefixes": [
+            "feature/",
+            "fix/",
+            "hotfix/",
+            "release/",
+            "chore/"
+          ],
           "note": "MUST use full words (feature/ NOT feat/)",
           "examples": {
-            "good": ["feature/project-visibility-307", "fix/login-bug-123"],
-            "bad": ["feat/new-feature", "bug/fix-123"]
+            "good": [
+              "feature/project-visibility-307",
+              "fix/login-bug-123"
+            ],
+            "bad": [
+              "feat/new-feature",
+              "bug/fix-123"
+            ]
           }
         },
         "code_rules": {
@@ -232,7 +244,7 @@
         "i18next"
       ],
       "a": "spa",
-      "sc": 67,
+      "sc": 68,
       "u": "2025-12-06",
       "mf": "metadata/projects/translate.hellocirrus.json",
       "tp": [
@@ -673,7 +685,7 @@
         "translate.hellocirrus",
         "DevOps"
       ],
-      "sc": 19
+      "sc": 20
     },
     "git-hooks": {
       "p": [
@@ -715,7 +727,7 @@
       "p": [
         "translate.hellocirrus"
       ],
-      "sc": 5
+      "sc": 6
     }
   },
   "cc": {

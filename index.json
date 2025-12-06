@@ -158,6 +158,19 @@
           "prd": "git checkout main && git merge origin/staging && git push origin main",
           "guide": "docs/deployment-guide.md",
           "note": "DO auto-deploy may need manual trigger"
+        },
+        "branch_naming": {
+          "pattern": "^(feature|fix|hotfix|release|chore)/[a-z0-9._-]+",
+          "prefixes": ["feature/", "fix/", "hotfix/", "release/", "chore/"],
+          "note": "MUST use full words (feature/ NOT feat/)",
+          "examples": {
+            "good": ["feature/project-visibility-307", "fix/login-bug-123"],
+            "bad": ["feat/new-feature", "bug/fix-123"]
+          }
+        },
+        "code_rules": {
+          "copyright": "All new .ts files MUST have Cirrus Inc copyright header",
+          "pull_after_merge": "Always git pull after merging PRs"
         }
       }
     },

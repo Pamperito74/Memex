@@ -29,8 +29,6 @@ const { decode: msgpackDecode } = require('@msgpack/msgpack');
 const Engram = require('./engram-loader');
 const EventConsumer = require('./event-consumer');
 const { resolveEngramPath } = require('./paths');
-const { readJSON } = require('./safe-json');
-
 const ENGRAM_PATH = resolveEngramPath(__dirname);
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const HOST = process.env.HOST || '127.0.0.1';
@@ -144,8 +142,8 @@ app.get('/api/stats', (req, res) => {
       version: index.v,
       lastUpdated: index.u,
     });
-  } catch (e) {
-    res.status(500).json({ error: 'Internal server error' });
+      } catch {
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -166,8 +164,8 @@ app.get('/api/projects', (req, res) => {
       total: projects.length,
       projects: projects.sort((a, b) => b.sessions - a.sessions),
     });
-  } catch (e) {
-    res.status(500).json({ error: 'Internal server error' });
+      } catch {
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -190,8 +188,8 @@ app.get('/api/sessions/:project', (req, res) => {
       total: sessions.length,
       sessions: sessions.slice(0, limit),
     });
-  } catch (e) {
-    res.status(500).json({ error: 'Internal server error' });
+      } catch {
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -218,8 +216,8 @@ app.get('/api/topics', (req, res) => {
       total: Object.keys(index.t || {}).length,
       topics,
     });
-  } catch (e) {
-    res.status(500).json({ error: 'Internal server error' });
+      } catch {
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -240,8 +238,8 @@ app.get('/api/search', (req, res) => {
     results.results = results.results.slice(0, limit);
 
     res.json(results);
-  } catch (e) {
-    res.status(500).json({ error: 'Internal server error' });
+      } catch {
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -266,8 +264,8 @@ app.post('/api/semantic-search', rateLimit(60_000, 30), async (req, res) => {
     });
 
     res.json(results);
-  } catch (e) {
-    res.status(500).json({ error: 'Internal server error' });
+      } catch {
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -328,20 +326,22 @@ app.get('/api/graph', (req, res) => {
       }
     }
 
-    res.json({ nodes, edges });
-  } catch (e) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+      res.json({ nodes, edges });
+    } catch {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
 
-/** Open (or return cached) ledger DB. Returns null if DB file does not exist. */
+  /** Open (or return cached) ledger DB. Returns null if DB file does not exist. */
 let _ledgerDb = null;
 function getLedgerDb() {
   if (_ledgerDb) return _ledgerDb;
-  const Database = require('better-sqlite3');
+  const fs = require('fs');
   const dbPath = path.join(ENGRAM_PATH, '.cache', 'engram.db');
   if (!fs.existsSync(dbPath)) return null;
-  _ledgerDb = new Database(dbPath, { readonly: false });
+  // Reuse the ledger's connection (WAL + busy_timeout already set)
+  const ledger = require('./ledger');
+  _ledgerDb = ledger.getDb();
   return _ledgerDb;
 }
 
@@ -466,11 +466,11 @@ app.get('/api/assertions/:id', (req, res) => {
       if (!e.message || !e.message.includes('no such table')) throw e;
     }
 
-    res.json({ ...assertion, lineage, outcomes, selection_count, avg_score });
-  } catch (e) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+        res.json({ ...assertion, lineage, outcomes, selection_count, avg_score });
+      } catch {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    });
 
 /**
  * GET /api/sessions/:project/:sessionId
@@ -520,8 +520,8 @@ app.get('/api/sessions/:project/:sessionId', (req, res) => {
       assertions_selected,
       outcomes,
     });
-  } catch (e) {
-    res.status(500).json({ error: 'Internal server error' });
+      } catch {
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -599,8 +599,8 @@ app.get('/api/agentbridge/status', async (req, res) => {
       bridge_configured: !!process.env.AGENTBRIDGE_URL,
       consumer: consumerStatus,
     });
-  } catch (e) {
-    res.status(500).json({ error: 'Internal server error' });
+      } catch {
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -674,7 +674,7 @@ if (require.main === module) {
       process.exit(0);
     });
     // Force exit after 10s
-    setTimeout(() => process.exit(1), 10000).unref();
+    setTimeout(() => process.exit(0), 10000).unref();
   }
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));

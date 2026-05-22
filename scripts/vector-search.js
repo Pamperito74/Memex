@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable */
 
 /**
  * Vector Search for Engram
@@ -12,11 +11,13 @@
 
 const fs = require('fs');
 const path = require('path');
+const { encode: msgpackEncode, decode: msgpackDecode } = require('@msgpack/msgpack');
 const { resolveEngramPath } = require('./paths');
 const { readJSON } = require('./safe-json');
 
 const ENGRAM_PATH = resolveEngramPath(__dirname);
 const EMBEDDINGS_PATH = path.join(ENGRAM_PATH, '.cache', 'embeddings.json');
+const EMBEDDINGS_MSGPACK_PATH = path.join(ENGRAM_PATH, '.cache', 'embeddings.msgpack');
 const DEFAULT_DUPLICATE_THRESHOLD = 0.85;
 const DEFAULT_DUPLICATE_LIMIT = 20;
 
@@ -188,20 +189,29 @@ class VectorSearch {
   }
 
   /**
-   * Load cached embeddings from disk
+   * Load cached embeddings from disk (msgpack preferred, JSON fallback)
    */
   loadEmbeddings() {
+    // Try msgpack first (smaller, faster)
+    if (fs.existsSync(EMBEDDINGS_MSGPACK_PATH)) {
+      try {
+        const buffer = fs.readFileSync(EMBEDDINGS_MSGPACK_PATH);
+        this.embeddings = msgpackDecode(buffer);
+        return this.embeddings;
+      } catch (e) {
+        console.warn('⚠️  Failed to load embeddings msgpack:', e.message);
+      }
+    }
+    // Legacy JSON fallback
     if (fs.existsSync(EMBEDDINGS_PATH)) {
       try {
         this.embeddings = JSON.parse(fs.readFileSync(EMBEDDINGS_PATH, 'utf8'));
         return this.embeddings;
       } catch (e) {
         console.warn('⚠️  Failed to load embeddings cache:', e.message);
-        this.embeddings = { sessions: {}, version: '1.0.0' };
       }
-    } else {
-      this.embeddings = { sessions: {}, version: '1.0.0' };
     }
+    this.embeddings = { sessions: {}, version: '1.0.0' };
     if (!this.embeddings.sessions) {
       this.embeddings.sessions = {};
     }
@@ -209,7 +219,7 @@ class VectorSearch {
   }
 
   /**
-   * Save embeddings to disk
+   * Save embeddings to disk (msgpack format)
    */
   saveEmbeddings() {
     if (!this.embeddings) return;
@@ -219,7 +229,8 @@ class VectorSearch {
       fs.mkdirSync(cacheDir, { recursive: true });
     }
 
-    fs.writeFileSync(EMBEDDINGS_PATH, JSON.stringify(this.embeddings, null, 2));
+    const buffer = msgpackEncode(this.embeddings);
+    fs.writeFileSync(EMBEDDINGS_MSGPACK_PATH, buffer);
   }
 
   /**
@@ -375,7 +386,6 @@ class VectorSearch {
     const {
       limit = 10,
       minSimilarity = 0.2,
-      includeScores = true,
       useDecay = true,
       decayRate = 0.98,
       halfLifeDays = null,
@@ -685,7 +695,7 @@ if (require.main === module) {
   (async () => {
     try {
       switch (command) {
-        case 'generate':
+        case 'generate': {
           console.log('🧠 Generating embeddings for all sessions...');
           await vectorSearch.initialize();
           const result = await vectorSearch.generateAllEmbeddings();
@@ -695,8 +705,9 @@ if (require.main === module) {
           console.log(`   • From cache: ${result.cached}`);
           console.log(`   • Saved to: ${result.embeddings_file}`);
           break;
+        }
 
-        case 'search':
+        case 'search': {
           const query = process.argv.slice(3).join(' ');
           if (!query) {
             console.error('Usage: vector-search.js search <query>');
@@ -717,8 +728,9 @@ if (require.main === module) {
             });
           }
           break;
+        }
 
-        case 'stats':
+        case 'stats': {
           const stats = vectorSearch.getStats();
           console.log('📊 Vector Search Stats:');
           console.log(`   • Embeddings: ${stats.total_embeddings}`);
@@ -727,9 +739,9 @@ if (require.main === module) {
           console.log(`   • Dimensions: ${stats.embedding_dimensions}`);
           console.log(`   • Model: ${stats.model}`);
           break;
+        }
 
-        case 'test':
-          // Quick test
+        case 'test': {
           console.log('🧪 Testing vector search...\n');
           await vectorSearch.initialize();
 
@@ -739,6 +751,7 @@ if (require.main === module) {
           console.log(`✓ Generated ${testEmbedding.length}-dimensional vector`);
           console.log(`✓ First 5 values: [${testEmbedding.slice(0, 5).map(v => v.toFixed(4)).join(', ')}...]`);
           break;
+        }
 
         case 'duplicates': {
           const duplicateOptions = parseDuplicateArgs(process.argv.slice(3));

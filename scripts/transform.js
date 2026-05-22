@@ -4,8 +4,6 @@
 
 const readline = require('readline');
 const ledger = require('./ledger');
-const { scanPlane } = require('./contradiction-sentinel');
-const { runPending: runVerifications } = require('./verification-hooks');
 
 const DEFAULT_PLANE = 'project:Engram';
 const DEFAULT_CONFIDENCE_THRESHOLD = 0.7;

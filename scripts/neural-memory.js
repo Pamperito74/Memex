@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable */
 
 /**
  * Engram - Memory System
@@ -27,10 +26,9 @@ const command = process.argv[2];
 (async () => {
   try {
     switch (command) {
-      case 'build':
+      case 'build': {
         console.log('🔄 Building git index...\n');
 
-        // Ensure directory
         if (!fs.existsSync(NEURAL_PATH)) {
           fs.mkdirSync(NEURAL_PATH, { recursive: true });
         }
@@ -41,9 +39,10 @@ const command = process.argv[2];
 
         console.log(`\n✅ Done: ${result.total} commits indexed`);
         break;
+      }
 
       case 'search':
-      case 'query':
+      case 'query': {
         const queryText = process.argv.slice(3).join(' ');
         if (!queryText) {
           console.error('Usage: neural-memory.js search <query>');
@@ -77,8 +76,9 @@ const command = process.argv[2];
           }
         }
         break;
+      }
 
-      case 'stats':
+      case 'stats': {
         if (!fs.existsSync(GIT_INDEX_PATH)) {
           console.log('No index found. Run: neural-memory.js build');
           process.exit(1);
@@ -99,6 +99,7 @@ const command = process.argv[2];
           console.log(`  ${proj}: ${count}`);
         }
         break;
+      }
 
       default:
         console.log('Engram - Git Search\n');

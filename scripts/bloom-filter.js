@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable */
 
 /**
  * Bloom Filter for Engram (#27)
@@ -66,7 +65,8 @@ class BloomFilter {
       for (let j = 0; j < 4; j++) {
         hash = hash + i * ((hash2[j] << (j * 8)));
       }
-      hashes.push(Math.abs(hash) % this.size);
+      hash = hash >>> 0; // Force unsigned 32-bit
+      hashes.push(hash % this.size);
     }
 
     return hashes;
@@ -110,9 +110,6 @@ class BloomFilter {
    * Get current false positive rate estimate
    */
   getFalsePositiveRate() {
-    const bitsSet = this.countBitsSet();
-    const ratio = bitsSet / this.size;
-    // Actual FPR: (1 - e^(-kn/m))^k
     return Math.pow(1 - Math.exp(-this.numHashFunctions * this.itemCount / this.size), this.numHashFunctions);
   }
 
@@ -330,7 +327,7 @@ if (require.main === module) {
           await testBloomFilter();
           break;
 
-        case 'check':
+        case 'check': {
           const filter = BloomFilter.load();
           if (!filter) {
             console.error('❌ No bloom filter found. Run "build" first.');
@@ -347,8 +344,9 @@ if (require.main === module) {
           console.log(`"${term}": ${exists ? 'might exist (check actual data)' : 'definitely does not exist'}`);
           process.exit(exists ? 0 : 1);
           break;
+        }
 
-        case 'stats':
+        case 'stats': {
           const loadedFilter = BloomFilter.load();
           if (!loadedFilter) {
             console.error('❌ No bloom filter found. Run "build" first.');
@@ -361,6 +359,7 @@ if (require.main === module) {
             console.log(`   • ${key}: ${value}`);
           });
           break;
+        }
 
         default:
           console.log('Bloom Filter - Instant negative lookups for Engram');

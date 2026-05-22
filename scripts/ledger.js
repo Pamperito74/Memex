@@ -23,6 +23,8 @@ function getDb() {
     const cacheDir = path.dirname(DB_PATH);
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir, { recursive: true });
     _db = new Database(DB_PATH);
+    _db.pragma('journal_mode = WAL');
+    _db.pragma('busy_timeout = 5000');
     _db.pragma('foreign_keys = ON');
   }
   return _db;
@@ -349,7 +351,8 @@ function createLedger(getDbFn) {
 
     const activeClaims = db.prepare(
       `SELECT id, claim FROM assertions
-       WHERE plane = ? AND status NOT IN ('fossilized','quarantined')`
+       WHERE plane = ? AND status NOT IN ('fossilized','quarantined')
+       ORDER BY created_at DESC LIMIT 1000`
     ).all(plane);
 
     const dup = findNearDuplicate(activeClaims, params.claim, dupThreshold);
@@ -364,6 +367,7 @@ function createLedger(getDbFn) {
     const negationIds = findNegations(activeClaims, params.claim, negThreshold);
     for (const existingId of negationIds) {
       linkSupersession(newId, existingId, 'contradicts');
+      linkSupersession(existingId, newId, 'contradicts'); // symmetric edge
     }
 
     return { action: 'created', id: newId, negations: negationIds };
@@ -474,6 +478,8 @@ const ledger = createLedger(getDb);
 
 module.exports = {
   ...ledger,
+  // Reuse the singleton DB connection (WAL + busy_timeout already set)
+  getDb,
   // Test escape hatch: inject a pre-opened in-memory DB
   _createForTesting: (db) => createLedger(() => db),
 };

@@ -17,7 +17,8 @@ function makeTestLedger() {
   const db = new Database(':memory:');
   db.pragma('foreign_keys = ON');
   runSqlMigrations(db);
-  return _createForTesting(db);
+  const ledger = _createForTesting(db);
+  return { ledger, getDb: () => db };
 }
 
 function makeAssertion(ledger, overrides = {}) {
@@ -38,11 +39,11 @@ function makeAssertion(ledger, overrides = {}) {
 
 describe('contradiction-sentinel: scanPlane finds no tensions in clean plane', async () => {
   it('returns tensions_found === 0 for two unrelated assertions', async () => {
-    const ledger = makeTestLedger();
+    const { ledger, getDb } = makeTestLedger();
     makeAssertion(ledger, { claim: 'The sky is blue' });
     makeAssertion(ledger, { claim: 'The grass is green' });
 
-    const sentinel = createSentinel(ledger);
+    const sentinel = createSentinel(ledger, getDb);
     const result = await sentinel.scanPlane('project:test');
     assert.equal(result.tensions_found, 0);
   });
@@ -50,11 +51,11 @@ describe('contradiction-sentinel: scanPlane finds no tensions in clean plane', a
 
 describe('contradiction-sentinel: scanPlane seeds tension for negation pair', async () => {
   it('detects "X is blue" vs "X is not blue" as a tension', async () => {
-    const ledger = makeTestLedger();
+    const { ledger, getDb } = makeTestLedger();
     makeAssertion(ledger, { claim: 'The sky is blue' });
     makeAssertion(ledger, { claim: 'The sky is not blue' });
 
-    const sentinel = createSentinel(ledger);
+    const sentinel = createSentinel(ledger, getDb);
     const result = await sentinel.scanPlane('project:test');
     assert.equal(result.tensions_found, 1);
 
@@ -66,11 +67,11 @@ describe('contradiction-sentinel: scanPlane seeds tension for negation pair', as
 
 describe('contradiction-sentinel: scanPlane is idempotent — second scan finds no new tensions', async () => {
   it('second scan returns tensions_found based on pairs found (idempotent link storage)', async () => {
-    const ledger = makeTestLedger();
+    const { ledger, getDb } = makeTestLedger();
     makeAssertion(ledger, { claim: 'The sky is blue' });
     makeAssertion(ledger, { claim: 'The sky is not blue' });
 
-    const sentinel = createSentinel(ledger);
+    const sentinel = createSentinel(ledger, getDb);
     const r1 = await sentinel.scanPlane('project:test');
     assert.equal(r1.tensions_found, 1);
 
@@ -248,7 +249,7 @@ describe('rank: rankAssertions uses counterfactualWeights map', () => {
 
 describe('ledger: markVerified updates last_verified timestamp', () => {
   it('sets last_verified after calling markVerified', () => {
-    const ledger = makeTestLedger();
+    const { ledger } = makeTestLedger();
     const id = makeAssertion(ledger);
 
     const before = ledger.getAssertion(id);
@@ -263,7 +264,7 @@ describe('ledger: markVerified updates last_verified timestamp', () => {
   });
 
   it('throws if assertion does not exist', () => {
-    const ledger = makeTestLedger();
+    const { ledger } = makeTestLedger();
     assert.throws(
       () => ledger.markVerified('nonexistent_id'),
       /markVerified: assertion not found/
@@ -277,7 +278,7 @@ describe('ledger: markVerified updates last_verified timestamp', () => {
 
 describe('ledger: rankActive applies counterfactual weights', () => {
   it('assertion with weight 0.01 scores below tentative unweighted assertion', () => {
-    const ledger = makeTestLedger();
+    const { ledger } = makeTestLedger();
 
     // Create an established assertion with high confidence, then weight it down
     const establishedId = makeAssertion(ledger, {

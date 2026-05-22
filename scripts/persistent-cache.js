@@ -44,6 +44,8 @@ class PersistentCache {
 
     // Open database connection
     this.db = new Database(CACHE_DB_PATH);
+    this.db.pragma('journal_mode = WAL');
+    this.db.pragma('busy_timeout = 5000');
 
     // Create cache table if it doesn't exist
     this.db.exec(`

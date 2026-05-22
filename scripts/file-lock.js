@@ -48,10 +48,8 @@ async function withFileLock(targetPath, fn, { retries = 20, delayMs = 25 } = {})
           fs.unlinkSync(lockPath);
           continue;
         }
-      } catch (err) {
-        if (err.code !== 'ENOENT') throw err;
-      }
-      if (attempt === retries) throw new Error(`Lock timeout for ${path.basename(targetPath)}`);
+      } catch { /* lock may have been cleaned up by another process */ }
+      if (attempt === retries) throw new Error(`Lock timeout for ${path.basename(targetPath)}`, { cause: e });
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }

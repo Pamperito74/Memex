@@ -42,23 +42,23 @@ async function scoreSession({ sessionId, replyText, db, embedFn }) {
 
   if (picks.length === 0) return { scored: 0, skipped: 0 };
 
-  // Phase 1: async embeddings
+  // Phase 1: async embeddings (parallel)
   const replyVec = await embedFn(replyText);
   const replyHash = crypto.createHash('sha256').update(replyText).digest('hex').slice(0, 32);
   const scoredAt = new Date().toISOString();
 
-  const rows = [];
-  for (const pick of picks) {
+  const rows = await Promise.all(picks.map(async (pick) => {
     const text = renderAssertion(pick);
-    const vec = await embedFn(text);
+    const truncated = text.length > 200 ? text.slice(0, 200) : text;
+    const vec = await embedFn(truncated);
     const raw = cosineSimilarity(replyVec, vec);
-    rows.push({
+    return {
       id: newId(),
       assertion_id: pick.assertion_id,
       selected_at: pick.selected_at,
       score: Math.max(0, Math.min(1, raw)),
-    });
-  }
+    };
+  }));
 
   // Phase 2: single sync transaction
   const insert = db.prepare(`

@@ -89,7 +89,7 @@ describe('ManifestManager', () => {
     const hash2 = manager.hashFile(filePath);
     assert.equal(hash1, hash2);
     assert.equal(typeof hash1, 'string');
-    assert.equal(hash1.length, 16);
+    assert.equal(hash1.length, 32);
   });
 
   it('getFileMetadata() returns correct shape', () => {

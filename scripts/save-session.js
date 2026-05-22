@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable */
 
 /**
  * Save Session - Save AI assistant session to Engram
@@ -13,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 const readline = require('readline');
 const { resolveEngramPath, resolveProjectDirName, normalizeProjectSlug } = require('./paths');
@@ -107,7 +107,7 @@ class SessionSaver {
       .toLowerCase()
       .replace(/[^a-z0-9-_]/g, '')
       .slice(0, 24) || 'session';
-    const nonce = Math.random().toString(36).slice(2, 6);
+    const nonce = crypto.randomBytes(3).toString('hex');
     return `${projectPrefix}-${date}-${time}-${topicSlug}-${nonce}`;
   }
 
@@ -144,7 +144,7 @@ class SessionSaver {
       };
 
       return { files, stats };
-    } catch (e) {
+    } catch {
       return null;
     }
   }
@@ -414,6 +414,8 @@ if (require.main === module) {
           ? args[topicsIndex + 1].split(',').map(t => t.trim())
           : [];
 
+        let fullContent = null;
+
         if (autoSummarize) {
           // Read content from stdin or from --content flag
           const contentIdx = args.indexOf('--content');
@@ -429,6 +431,7 @@ if (require.main === module) {
           }
 
           if (content) {
+            fullContent = content;
             const Summarizer = require('./summarizer');
             const s = new Summarizer();
             const result = await s.summarize({ content, topics, project: saver.currentProject });
@@ -446,7 +449,7 @@ if (require.main === module) {
           topics = extractTopics(summary);
         }
 
-        const result = await saver.saveSession(summary, topics, null, { commit, push });
+        const result = await saver.saveSession(summary, topics, fullContent, { commit, push });
         console.log(`✅ Session saved: ${result.session_id}`);
         if (topics.length) console.log(`   Topics: ${topics.join(', ')}`);
       }

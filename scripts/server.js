@@ -42,7 +42,7 @@ app.use(express.json());
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:");
   next();
 });
 
@@ -308,10 +308,10 @@ app.get('/api/graph', (req, res) => {
 
       const sessions = data.w || 1;
       let color;
-      if (sessions >= 5) color = '#f85149';       // hot
-      else if (sessions >= 3) color = '#d29922';   // warm
-      else if (sessions >= 2) color = '#58a6ff';   // normal
-      else color = '#8b949e';                       // cold
+      if (sessions >= 5) color = '#ef4444';       // hot
+      else if (sessions >= 3) color = '#f59e0b';   // warm
+      else if (sessions >= 2) color = '#3b82f6';   // normal
+      else color = '#71717a';                       // cold
 
       nodes.push({
         id: nodeId,

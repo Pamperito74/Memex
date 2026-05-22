@@ -83,14 +83,17 @@ function switchView(view) {
 
   state.currentView = view;
 
-  // Update topbar title
+  var titleText = VIEW_NAMES[view] || view;
   var titleEl = document.getElementById('view-title');
-  if (titleEl) titleEl.textContent = VIEW_NAMES[view] || view;
+  if (titleEl) titleEl.textContent = titleText;
+  document.title = titleText + ' — Engram';
 
-  // Close mobile sidebar
   closeSidebar();
 
-  // Load view-specific data
+  if (view === 'search') {
+    var input = document.getElementById('search-input');
+    if (input) setTimeout(function () { input.focus(); }, 100);
+  }
   if (view === 'graph') {
     var activeType = document.querySelector('.graph-type-btn.active');
     loadGraph(activeType ? activeType.dataset.type : 'concepts');
@@ -179,15 +182,12 @@ async function loadRecentSessions() {
   const projectsData = await api.get('/projects');
   state.projects = projectsData.projects;
 
-  // Gather recent sessions from all projects
-  const allSessions = [];
-
-  for (const proj of projectsData.projects) {
-    const sessionsData = await api.get(`/sessions/${proj.name}?limit=5`);
-    for (const s of sessionsData.sessions) {
-      allSessions.push({ ...s, project: proj.name });
-    }
-  }
+  const allSessions = (await Promise.all(
+    projectsData.projects.map(async (proj) => {
+      const sessionsData = await api.get(`/sessions/${proj.name}?limit=5`);
+      return sessionsData.sessions.map(s => ({ ...s, project: proj.name }));
+    })
+  )).flat();
 
   // Sort by date descending
   allSessions.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -334,13 +334,13 @@ async function loadGraph(type) {
     _graphSearchHandler = function (e) {
       var q = e.target.value.toLowerCase();
       if (!q) {
-        _graphNodes.forEach(function (n) { _graphNodes.update({ id: n.id, opacity: 1, font: { color: '#e6edf3' } }); });
+        _graphNodes.forEach(function (n) { _graphNodes.update({ id: n.id, opacity: 1, font: { color: '#fafafa' } }); });
         return;
       }
       var firstMatch = null;
       _graphNodes.forEach(function (n) {
         var match = n.label.toLowerCase().includes(q);
-        _graphNodes.update({ id: n.id, opacity: match ? 1 : 0.2, font: { color: match ? '#ffffff' : '#555555' } });
+        _graphNodes.update({ id: n.id, opacity: match ? 1 : 0.2, font: { color: match ? '#fafafa' : '#52525b' } });
         if (match && firstMatch === null) firstMatch = n.id;
       });
       if (firstMatch !== null) _graphNetwork.focus(firstMatch, { scale: 1.5, animation: true });

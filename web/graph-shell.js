@@ -1,9 +1,9 @@
 var GraphShell = (function () {
   function nodeColor(value) {
-    if (value >= 5) return '#f85149';
-    if (value >= 3) return '#d29922';
-    if (value >= 2) return '#58a6ff';
-    return '#8b949e';
+    if (value >= 5) return '#ef4444';
+    if (value >= 3) return '#f59e0b';
+    if (value >= 2) return '#3b82f6';
+    return '#71717a';
   }
 
   function buildOptions(opts) {
@@ -11,7 +11,7 @@ var GraphShell = (function () {
     var base = {
       nodes: {
         shape: 'dot',
-        font: { color: '#e6edf3', size: 12 },
+        font: { color: '#fafafa', size: 12 },
         borderWidth: 2,
         shadow: true
       },

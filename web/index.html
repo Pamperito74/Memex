@@ -7,6 +7,7 @@
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2318181b'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' font-family='Inter,sans-serif' font-weight='700' fill='%2310b981'%3EE%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
+  <noscript><style>body:before{content:'Engram requires JavaScript to function.';display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;font-size:1.125rem;color:#71717a;background:#09090b}</style></noscript>
 </head>
 <body>
   <!-- SVG Icons (hidden sprite) -->
@@ -176,7 +177,7 @@
         <section id="view-search" class="view">
           <div class="search-container">
             <div class="search-box">
-              <input type="text" id="search-input" placeholder="Search sessions by meaning..." autocomplete="off">
+              <input type="text" id="search-input" placeholder='Search sessions by meaning... (Press " / " to focus)' autocomplete="off">
               <div class="search-options">
                 <label>
                   <input type="checkbox" id="semantic-toggle" checked>

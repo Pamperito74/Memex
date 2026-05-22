@@ -669,8 +669,38 @@ Token-efficient mode active. Most queries answered from ${result.index.size_kb}K
 
 // CLI Usage
 if (require.main === module) {
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+  const version = pkg.version || '0.0.0';
+  const arg = process.argv[2];
+
+  if (arg === '--version' || arg === '-v') {
+    console.log(version);
+    process.exit(0);
+  }
+
+  if (arg === '--help' || arg === '-h') {
+    console.log('Engram v' + version + ' - Local memory and assertion ledger for AI coding agents');
+    console.log('');
+    console.log('Usage: engram [command] [args]');
+    console.log('');
+    console.log('Commands:');
+    console.log('  setup              - Initialize data directory (~/.engram)');
+    console.log('  remember [summary] - Save a session note');
+    console.log('  start              - Start web dashboard (http://127.0.0.1:3000/)');
+    console.log('  startup            - Load and display startup info');
+    console.log('  search <query>     - Search across all projects (keyword)');
+    console.log('  semantic <query>   - Semantic search by meaning (AI-powered)');
+    console.log('  list               - List all projects');
+    console.log('  quick <query>      - Quick answer from index');
+    console.log('  content <file>     - Load specific content file');
+    console.log('  expand [context]   - Show legend for abbreviated keys');
+    console.log('  status             - Health check and diagnostics');
+    console.log('  mcp                - Start MCP server (stdio)');
+    process.exit(0);
+  }
+
   const engram = new Engram();
-  const command = process.argv[2];
+  const command = arg;
 
   try {
     switch (command) {
@@ -957,7 +987,7 @@ if (require.main === module) {
       }
 
       default:
-        console.log('Engram v4.0.3 - Local memory and assertion ledger for AI coding agents');
+        console.log('Engram v' + version + ' - Local memory and assertion ledger for AI coding agents');
         console.log('');
         console.log('Usage: engram [command] [args]');
         console.log('');

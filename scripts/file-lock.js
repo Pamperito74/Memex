@@ -43,14 +43,20 @@ async function withFileLock(targetPath, fn, { retries = 20, delayMs = 25 } = {})
     } catch (e) {
       if (e.code !== 'EEXIST') throw e;
       try {
-        const stat = fs.statSync(lockPath);
+        var stat = fs.statSync(lockPath);
         if (Date.now() - stat.mtimeMs > LOCK_TTL_MS) {
-          fs.unlinkSync(lockPath);
-          continue;
+          var gravestone = lockPath + '.stale.' + Date.now() + '.' + process.pid;
+          try {
+            fs.renameSync(lockPath, gravestone);
+            try { fs.unlinkSync(gravestone); } catch { /* best effort */ }
+            continue;
+          } catch (er) {
+            if (er.code === 'ENOENT') continue;
+          }
         }
-      } catch { /* lock may have been cleaned up by another process */ }
-      if (attempt === retries) throw new Error(`Lock timeout for ${path.basename(targetPath)}`, { cause: e });
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      } catch { /* lock may have been cleaned up */ }
+      if (attempt === retries) throw new Error('Lock timeout for ' + path.basename(targetPath), { cause: e });
+      await new Promise(function (resolve) { setTimeout(resolve, delayMs); });
     }
   }
 }

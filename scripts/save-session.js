@@ -22,6 +22,15 @@ const { atomicWriteFileSync, withFileLock } = require('./file-lock');
 
 const ENGRAM_PATH = resolveEngramPath(__dirname);
 
+var GIT_BRANCH = process.env.ENGRAM_GIT_BRANCH;
+if (!GIT_BRANCH) {
+  try {
+    GIT_BRANCH = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: ENGRAM_PATH, encoding: 'utf8' }).trim();
+  } catch {
+    GIT_BRANCH = 'main';
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // TF-IDF Topic Extraction (#10)
 // ─────────────────────────────────────────────────────────────
@@ -346,7 +355,7 @@ class SessionSaver {
       console.log('✓ Changes committed to Engram');
 
       if (push) {
-        execFileSync('git', ['push', 'origin', 'main'], { cwd: ENGRAM_PATH, stdio: 'inherit' });
+        execFileSync('git', ['push', 'origin', GIT_BRANCH], { cwd: ENGRAM_PATH, stdio: 'inherit' });
         console.log('✓ Pushed to remote');
       }
     } catch (e) {

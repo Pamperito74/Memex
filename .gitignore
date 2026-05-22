@@ -1,11 +1,13 @@
 node_modules/
 .DS_Store
+.a5c/
+.claude/
 
 # Generated cache and manifest files
 .cache/
-.codicil-manifest.json
-.codicil-manifest.msgpack
-.codicil-manifest.*
+.engram-manifest.json
+.engram-manifest.msgpack
+.engram-manifest.*
 *.db
 *.db-journal
 .archive/
@@ -18,14 +20,14 @@ index.json
 index.json.backup
 slim-context.json
 graph.html
-graph-codicil.html
+graph-engram.html
 
 # Coverage
 coverage/
 .nyc_output/
 
 # Security scan outputs (never commit, never publish)
-codicil.html
+engram.html
 secgate-*.json
 secgate-*.html
 *.secgate.json
@@ -38,15 +40,15 @@ secgate-*.html
 # Schemas (generated from source)
 schemas/session.schema.msgpack
 
-# Private project summaries/metadata (only Codicil is public)
+# Private project summaries/metadata (only Engram is public)
 summaries/projects/*
-!summaries/projects/Codicil/
+!summaries/projects/Engram/
 
 # Session logs (use examples/sessions/ for curated demos)
 summaries/projects/*/sessions/*.json
 metadata/projects/*
-!metadata/projects/Codicil.json
-!metadata/projects/Codicil.msgpack
+!metadata/projects/Engram.json
+!metadata/projects/Engram.msgpack
 
 # Private templates
 templates/AGENTS-*.md

@@ -22,7 +22,6 @@ const state = {
   stats: null,
   projects: [],
   topics: [],
-  graph: null,
   selectedProject: null,
   searchTimeout: null
 };
@@ -76,8 +75,9 @@ function switchView(view) {
   state.currentView = view;
 
   // Load view-specific data
-  if (view === 'graph' && !state.graph) {
-    loadGraph();
+  if (view === 'graph') {
+    var activeType = document.querySelector('.graph-type-btn.active');
+    loadGraph(activeType ? activeType.dataset.type : 'concepts');
   }
   if (view === 'sessions' && state.projects.length === 0) {
     loadProjectTabs();
@@ -269,78 +269,79 @@ function searchTopic(topic) {
 // Graph
 // ─────────────────────────────────────────────────────────────
 
-async function loadGraph() {
+let _graphNetwork = null;
+let _graphNodes = null;
+let _graphSearchHandler = null;
+
+async function loadGraph(type) {
   const container = document.getElementById('graph-canvas');
-  container.innerHTML = '<div class="loading" style="padding: 40px;">Loading graph...</div>';
+  container.innerHTML = '<div class="loading" style="padding:40px">Loading graph...</div>';
 
-  try {
-    const data = await api.get('/graph');
-    state.graph = data;
+  if (type === 'projects') {
+    try {
+      const res = await fetch('/api/projects');
+      const data = await res.json();
+      const nodeList = (data.projects || []).map((p, i) => {
+        const s = p.sessions || 1;
+        return {
+          id: i + 1,
+          label: p.name,
+          value: s,
+          color: { background: GraphShell.nodeColor(s), border: GraphShell.nodeColor(s) },
+          title: p.name + ': ' + s + ' session' + (s !== 1 ? 's' : '')
+        };
+      });
+      _graphNodes = new vis.DataSet(nodeList);
+      const edges = new vis.DataSet([]);
+      const opts = GraphShell.buildOptions({ reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches });
+      _graphNetwork = new vis.Network(container, { nodes: _graphNodes, edges }, opts);
+    } catch (e) {
+      container.innerHTML = '<div class="empty-state">Failed to load graph: ' + e.message + '</div>';
+      return;
+    }
+  } else {
+    try {
+      const data = await api.get('/graph');
+      _graphNodes = new vis.DataSet(data.nodes || []);
+      const edges = new vis.DataSet(data.edges || []);
+      const opts = GraphShell.buildOptions({ reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches });
+      _graphNetwork = new vis.Network(container, { nodes: _graphNodes, edges }, opts);
+    } catch (e) {
+      container.innerHTML = '<div class="empty-state">Failed to load graph: ' + e.message + '</div>';
+      return;
+    }
+  }
 
-    const nodes = new vis.DataSet(data.nodes);
-    const edges = new vis.DataSet(data.edges);
-
-    const options = {
-      nodes: {
-        shape: 'dot',
-        font: { color: '#e6edf3', size: 12 },
-        borderWidth: 2,
-        shadow: true
-      },
-      edges: {
-        color: { color: '#30363d', highlight: '#58a6ff' },
-        smooth: { type: 'continuous' }
-      },
-      physics: {
-        forceAtlas2Based: {
-          gravitationalConstant: -50,
-          centralGravity: 0.01,
-          springLength: 100,
-          springConstant: 0.08
-        },
-        maxVelocity: 50,
-        solver: 'forceAtlas2Based',
-        timestep: 0.35,
-        stabilization: { iterations: 150 }
-      },
-      interaction: {
-        hover: true,
-        tooltipDelay: 100
-      }
-    };
-
-    const network = new vis.Network(container, { nodes, edges }, options);
-
-    // Graph search
-    document.getElementById('graph-search').addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase();
-      if (!query) {
-        nodes.forEach(node => nodes.update({ id: node.id, opacity: 1 }));
+  var searchInput = document.getElementById('graph-search');
+  if (searchInput) {
+    if (_graphSearchHandler) searchInput.removeEventListener('input', _graphSearchHandler);
+    _graphSearchHandler = function (e) {
+      var q = e.target.value.toLowerCase();
+      if (!q) {
+        _graphNodes.forEach(function (n) { _graphNodes.update({ id: n.id, opacity: 1, font: { color: '#e6edf3' } }); });
         return;
       }
-
-      nodes.forEach(node => {
-        const match = node.label.toLowerCase().includes(query);
-        nodes.update({
-          id: node.id,
-          opacity: match ? 1 : 0.2,
-          font: { color: match ? '#fff' : '#555' }
-        });
-        if (match) {
-          network.focus(node.id, { scale: 1.5, animation: true });
-        }
+      var firstMatch = null;
+      _graphNodes.forEach(function (n) {
+        var match = n.label.toLowerCase().includes(q);
+        _graphNodes.update({ id: n.id, opacity: match ? 1 : 0.2, font: { color: match ? '#ffffff' : '#555555' } });
+        if (match && firstMatch === null) firstMatch = n.id;
       });
-    });
-
-    network.on('click', (params) => {
-      if (params.nodes.length > 0) {
-        network.focus(params.nodes[0], { scale: 1.5, animation: true });
-      }
-    });
-
-  } catch (e) {
-    container.innerHTML = `<div class="empty-state">Failed to load graph: ${e.message}</div>`;
+      if (firstMatch !== null) _graphNetwork.focus(firstMatch, { scale: 1.5, animation: true });
+    };
+    searchInput.addEventListener('input', _graphSearchHandler);
   }
+}
+
+function initGraphToggle() {
+  document.querySelectorAll('.graph-type-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.graph-type-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById('graph-search').value = '';
+      loadGraph(btn.dataset.type);
+    });
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -377,15 +378,15 @@ async function selectProject(name) {
 
   const data = await api.get(`/sessions/${name}?limit=100`);
 
-  const html = data.sessions.map(s => `
-    <div class="session-card">
-      <div class="date">${esc(s.date)}</div>
-      <div class="summary">${esc(s.summary)}</div>
-      <div class="topics">
-        ${(s.topics || []).map(t => `<span class="session-topic">${esc(t)}</span>`).join('')}
-      </div>
-    </div>
-  `).join('');
+  var html = data.sessions.map(function (s) {
+    var sid = s.session_id || s.id || s.date;
+    return '<div class="session-card" onclick="openSessionDetail(\'' + esc(name) + '\',\'' + esc(sid) + '\')">' +
+      '<div class="date">' + esc(s.date) + '</div>' +
+      '<div class="summary">' + esc(s.summary) + '</div>' +
+      '<div class="topics">' +
+      (s.topics || []).map(function (t) { return '<span class="session-topic">' + esc(t) + '</span>'; }).join('') +
+      '</div></div>';
+  }).join('');
 
   container.innerHTML = html || '<div class="empty-state">No sessions</div>';
 }
@@ -461,7 +462,10 @@ function initAssertions() {
 
   searchInput.addEventListener('input', () => {
     clearTimeout(assertionsState.timeout);
-    assertionsState.timeout = setTimeout(() => loadAssertions(1), 300);
+    assertionsState.timeout = setTimeout(() => {
+      if (!document.body.contains(searchInput)) return;
+      loadAssertions(1);
+    }, 300);
   });
 
   statusSelect.addEventListener('change', () => loadAssertions(1));
@@ -576,7 +580,7 @@ async function openAssertionDetail(id) {
 
   document.querySelectorAll('#detail-feedback .feedback-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
-      await api.post('/feedback', { sessionId: 'manual', assertionId: id, signal: btn.dataset.signal });
+      await api.post('/feedback', { sessionId: 'detail-panel', assertionId: id, signal: btn.dataset.signal });
       const msg = document.getElementById('feedback-msg');
       if (msg) { msg.style.display = ''; }
     });
@@ -584,9 +588,41 @@ async function openAssertionDetail(id) {
 }
 
 async function openSessionDetail(project, sessionId) {
-  const res = await fetch(`/api/sessions/${encodeURIComponent(project)}/${encodeURIComponent(sessionId)}`);
-  const json = await res.json();
-  console.log('session detail', json);
+  var res = await fetch('/api/sessions/' + encodeURIComponent(project) + '/' + encodeURIComponent(sessionId));
+  var data = await res.json();
+
+  document.getElementById('session-detail-project').textContent = project;
+  document.getElementById('session-detail-date').textContent = data.date || sessionId;
+  document.getElementById('session-detail-summary').textContent = data.summary || '';
+  document.getElementById('session-detail-content').textContent = data.fullContent || data.content || '(no content)';
+
+  var topicsEl = document.getElementById('session-detail-topics');
+  if (data.topics && data.topics.length) {
+    topicsEl.innerHTML = data.topics.map(function (t) { return '<span class="session-topic">' + esc(t) + '</span>'; }).join('');
+  } else {
+    topicsEl.innerHTML = '<span class="text-muted">None</span>';
+  }
+
+  var metaEl = document.getElementById('session-detail-meta');
+  var metaLines = [];
+  if (data.project) metaLines.push('<span class="detail-chip">Project: ' + esc(data.project) + '</span>');
+  if (data.date) metaLines.push('<span class="detail-chip">Date: ' + esc(data.date) + '</span>');
+  if (data.session_id) metaLines.push('<span class="detail-chip">ID: ' + esc(data.session_id) + '</span>');
+  if (data.token_count) metaLines.push('<span class="detail-chip">Tokens: ' + data.token_count + '</span>');
+  if (data.word_count) metaLines.push('<span class="detail-chip">Words: ' + data.word_count + '</span>');
+  metaEl.innerHTML = metaLines.join('');
+
+  switchView('session');
+}
+
+function initSessionDetail() {
+  document.getElementById('session-back').addEventListener('click', function () {
+    if (state.selectedProject) {
+      switchView('sessions');
+    } else {
+      switchView('dashboard');
+    }
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -601,6 +637,10 @@ function initKeyboard() {
     const inInput = tag === 'input' || tag === 'textarea' || tag === 'select';
 
     if (e.key === 'Escape') {
+      if (state.currentView === 'session') {
+        document.getElementById('session-back').click();
+        return;
+      }
       const panel = document.getElementById('assertion-detail');
       if (panel && !panel.hidden) {
         closeAssertionDetail();
@@ -627,14 +667,36 @@ function initKeyboard() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Theme Toggle
+// ─────────────────────────────────────────────────────────────
+
+function initTheme() {
+  const toggle = document.getElementById('theme-toggle');
+  if (!toggle) return;
+  const theme = localStorage.getItem('engram-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  toggle.textContent = theme === 'dark' ? '🌙' : '☀️';
+  toggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('engram-theme', next);
+    toggle.textContent = next === 'dark' ? '🌙' : '☀️';
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
 // Init
 // ─────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   initNavigation();
   initSearch();
   initAssertions();
   initKeyboard();
+  initGraphToggle();
+  initSessionDetail();
   loadDashboard();
 
   const closeBtn = document.getElementById('detail-close');

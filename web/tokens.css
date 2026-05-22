@@ -1,43 +1,111 @@
 /* ─────────────────────────────────────────────────────────────
-   Codicil Design Tokens
+   Engram Design Tokens — less-is-more-ui · GitHub Two-Tone
    ───────────────────────────────────────────────────────────── */
 
 :root {
+  --space-unit: 0.5rem;
+  --space-xs: calc(var(--space-unit) * 1);
+  --space-sm: calc(var(--space-unit) * 2);
+  --space-md: calc(var(--space-unit) * 3);
+  --space-lg: calc(var(--space-unit) * 4);
+  --space-xl: calc(var(--space-unit) * 6);
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  --border-width: 2px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+  --font-size-sm: 0.75rem;
+  --font-size-base: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.25;
+  --line-height-base: 1.5;
+}
+
+:root,
+[data-theme="dark"] {
   --bg-primary: #0d1117;
   --bg-secondary: #161b22;
   --bg-tertiary: #21262d;
+  --bg-inset: #0d1117;
   --border: #30363d;
+  --border-muted: #21262d;
   --text-primary: #e6edf3;
   --text-secondary: #8b949e;
   --text-muted: #6e7681;
-  --accent: #58a6ff;
-  --accent-hover: #79b8ff;
+  --accent-blue: #58a6ff;
+  --accent-blue-hover: #79b8ff;
+  --accent-green: #3fb950;
+  --accent-green-hover: #56d364;
   --success: #3fb950;
   --warning: #d29922;
   --danger: #f85149;
-  --hot: #e74c3c;
-  --warm: #f39c12;
-  --normal: #3498db;
-  --cold: #95a5a6;
+  --hot: #f85149;
+  --warm: #d29922;
+  --normal: #58a6ff;
+  --cold: #8b949e;
+  --header-bg: #161b22;
+  --focus-ring: #58a6ff;
+}
+
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-tertiary: #eaeef2;
+  --bg-inset: #ffffff;
+  --border: #d0d7de;
+  --border-muted: #eaeef2;
+  --text-primary: #1f2328;
+  --text-secondary: #656d76;
+  --text-muted: #9198a1;
+  --accent-blue: #0969da;
+  --accent-blue-hover: #0550ae;
+  --accent-green: #1a7f37;
+  --accent-green-hover: #116329;
+  --success: #1a7f37;
+  --warning: #9a6700;
+  --danger: #cf222e;
+  --hot: #cf222e;
+  --warm: #bf8700;
+  --normal: #0969da;
+  --cold: #57606a;
+  --header-bg: #ffffff;
+  --focus-ring: #0969da;
 }
 
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme="dark"]) {
     --bg-primary: #ffffff;
     --bg-secondary: #f6f8fa;
     --bg-tertiary: #eaeef2;
+    --bg-inset: #ffffff;
     --border: #d0d7de;
+    --border-muted: #eaeef2;
     --text-primary: #1f2328;
     --text-secondary: #656d76;
     --text-muted: #9198a1;
-    --accent: #0969da;
-    --accent-hover: #0550ae;
+    --accent-blue: #0969da;
+    --accent-blue-hover: #0550ae;
+    --accent-green: #1a7f37;
+    --accent-green-hover: #116329;
     --success: #1a7f37;
     --warning: #9a6700;
-    --danger: #d1242f;
+    --danger: #cf222e;
     --hot: #cf222e;
     --warm: #bf8700;
     --normal: #0969da;
     --cold: #57606a;
+    --header-bg: #ffffff;
+    --focus-ring: #0969da;
   }
 }

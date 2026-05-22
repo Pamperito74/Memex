@@ -17,6 +17,15 @@ function esc(str) {
 // State
 // ─────────────────────────────────────────────────────────────
 
+const VIEW_NAMES = {
+  dashboard: 'Dashboard',
+  search: 'Search',
+  graph: 'Graph',
+  sessions: 'Sessions',
+  assertions: 'Assertions',
+  session: 'Session'
+};
+
 const state = {
   currentView: 'dashboard',
   stats: null,
@@ -74,13 +83,20 @@ function switchView(view) {
 
   state.currentView = view;
 
+  // Update topbar title
+  var titleEl = document.getElementById('view-title');
+  if (titleEl) titleEl.textContent = VIEW_NAMES[view] || view;
+
+  // Close mobile sidebar
+  closeSidebar();
+
   // Load view-specific data
   if (view === 'graph') {
     var activeType = document.querySelector('.graph-type-btn.active');
     loadGraph(activeType ? activeType.dataset.type : 'concepts');
   }
-  if (view === 'sessions' && state.projects.length === 0) {
-    loadProjectTabs();
+  if (view === 'sessions') {
+    updateSidebarProjects();
   }
   if (view === 'assertions') {
     loadAssertions(1);
@@ -99,7 +115,7 @@ async function loadDashboard() {
   document.getElementById('stat-sessions').textContent = stats.totalSessions;
   document.getElementById('stat-projects').textContent = stats.projects.length;
   document.getElementById('stat-topics').textContent = stats.totalTopics;
-  document.getElementById('total-sessions').textContent = stats.totalSessions;
+  document.getElementById('sidebar-sessions').textContent = stats.totalSessions;
 
   // Load projects
   const projectsHtml = stats.projects
@@ -217,7 +233,7 @@ async function performSearch(query, semantic, decay) {
     return;
   }
 
-  resultsContainer.innerHTML = '<div class="loading">Searching...</div>';
+  resultsContainer.innerHTML = '<div class="skeleton skeleton-row"></div><div class="skeleton skeleton-row" style="width:80%"></div><div class="skeleton skeleton-row" style="width:60%"></div>';
 
   let results;
 
@@ -232,7 +248,7 @@ async function performSearch(query, semantic, decay) {
   }
 
   if (!results.results || results.results.length === 0) {
-    resultsContainer.innerHTML = '<div class="search-hint">No results found</div>';
+    resultsContainer.innerHTML = '<div class="empty-state"><svg><use href="#icon-search"/></svg><p>No results found</p><code>try a different query</code></div>';
     return;
   }
 
@@ -275,7 +291,7 @@ let _graphSearchHandler = null;
 
 async function loadGraph(type) {
   const container = document.getElementById('graph-canvas');
-  container.innerHTML = '<div class="loading" style="padding:40px">Loading graph...</div>';
+  container.innerHTML = '<div class="empty-state"><svg><use href="#icon-graph"/></svg><p>Loading graph...</p></div>';
 
   if (type === 'projects') {
     try {
@@ -348,33 +364,38 @@ function initGraphToggle() {
 // Sessions View
 // ─────────────────────────────────────────────────────────────
 
-async function loadProjectTabs() {
-  const projectsData = await api.get('/projects');
-  state.projects = projectsData.projects;
+async function updateSidebarProjects() {
+  if (state.projects.length === 0) {
+    const projectsData = await api.get('/projects');
+    state.projects = projectsData.projects;
+  }
 
-  const html = projectsData.projects
+  const html = state.projects
     .sort((a, b) => b.sessions - a.sessions)
-    .map(p => `
-      <div class="project-tab" onclick="selectProject('${esc(p.name)}')" data-project="${esc(p.name)}">
+    .map(p => {
+      const active = state.selectedProject === p.name;
+      return `<div class="project-tab${active ? ' active' : ''}" onclick="selectProject('${esc(p.name)}')" data-project="${esc(p.name)}">
         <span>${esc(p.name)}</span>
         <span class="count">${p.sessions}</span>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
 
-  document.getElementById('project-tabs').innerHTML = html;
+  document.getElementById('sidebar-projects').innerHTML = html || '<div class="empty-state" style="padding:var(--space-4) var(--space-3)"><svg><use href="#icon-sessions"/></svg><p>No projects yet</p><code>engram remember</code></div>';
 }
 
 async function selectProject(name) {
   state.selectedProject = name;
+  closeSidebar();
+  updateSidebarProjects();
 
-  // Update tabs
-  document.querySelectorAll('.project-tab').forEach(tab => {
-    tab.classList.toggle('active', tab.dataset.project === name);
-  });
+  // Ensure sessions view is active
+  switchView('sessions');
+  setTimeout(() => loadSessionsForProject(name), 50);
+}
 
-  // Load sessions
+async function loadSessionsForProject(name) {
   const container = document.getElementById('sessions-list-full');
-  container.innerHTML = '<div class="loading">Loading sessions...</div>';
+  container.innerHTML = '<div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div>';
 
   const data = await api.get(`/sessions/${name}?limit=100`);
 
@@ -392,8 +413,7 @@ async function selectProject(name) {
 }
 
 function viewProject(name) {
-  switchView('sessions');
-  setTimeout(() => selectProject(name), 100);
+  selectProject(name);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -410,7 +430,7 @@ async function loadAssertions(page = 1) {
   const status = document.getElementById('assertions-status')?.value || '';
   const limit = 50;
 
-  container.innerHTML = '<div class="loading">Loading...</div>';
+  container.innerHTML = '<div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div>';
 
   const params = new URLSearchParams({ page, limit });
   if (q) params.set('q', q);
@@ -490,7 +510,7 @@ async function openAssertionDetail(id) {
   _detailPanelTrigger = document.activeElement;
 
   const panel = document.getElementById('assertion-detail');
-  document.getElementById('detail-claim').textContent = 'Loading...';
+  document.getElementById('detail-claim').textContent = '—';
   document.getElementById('detail-meta').innerHTML = '';
   document.getElementById('detail-outcomes').innerHTML = '';
   document.getElementById('detail-lineage').innerHTML = '';
@@ -626,6 +646,32 @@ function initSessionDetail() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Sidebar Toggle (mobile)
+// ─────────────────────────────────────────────────────────────
+
+function initSidebar() {
+  var toggle = document.getElementById('sidebar-toggle');
+  if (!toggle) return;
+
+  toggle.addEventListener('click', function () {
+    var sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('open');
+  });
+
+  document.addEventListener('click', function (e) {
+    var sidebar = document.getElementById('sidebar');
+    if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== toggle && !toggle.contains(e.target)) {
+      closeSidebar();
+    }
+  });
+}
+
+function closeSidebar() {
+  var sidebar = document.getElementById('sidebar');
+  if (sidebar) sidebar.classList.remove('open');
+}
+
+// ─────────────────────────────────────────────────────────────
 // Keyboard Navigation
 // ─────────────────────────────────────────────────────────────
 
@@ -675,14 +721,19 @@ function initTheme() {
   if (!toggle) return;
   const theme = localStorage.getItem('engram-theme') || 'dark';
   document.documentElement.setAttribute('data-theme', theme);
-  toggle.textContent = theme === 'dark' ? '🌙' : '☀️';
+  updateThemeIcon(toggle, theme);
   toggle.addEventListener('click', () => {
     const current = document.documentElement.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('engram-theme', next);
-    toggle.textContent = next === 'dark' ? '🌙' : '☀️';
+    updateThemeIcon(toggle, next);
   });
+}
+
+function updateThemeIcon(toggle, theme) {
+  const use = toggle.querySelector('use');
+  if (use) use.setAttribute('href', theme === 'dark' ? '#icon-moon' : '#icon-sun');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -692,12 +743,15 @@ function initTheme() {
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initNavigation();
+  initSidebar();
   initSearch();
   initAssertions();
   initKeyboard();
   initGraphToggle();
   initSessionDetail();
   loadDashboard();
+  updateSidebarProjects();
+  document.getElementById('footer-version').textContent = 'v1.0.0';
 
   const closeBtn = document.getElementById('detail-close');
   if (closeBtn) {

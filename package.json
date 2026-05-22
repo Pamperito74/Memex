@@ -29,7 +29,10 @@
     "semantic:stats": "node scripts/vector-search.js stats",
     "ledger:migrate": "node scripts/migrations.js",
     "ledger:stats": "node -e \"try { const l = require('./scripts/ledger'); console.log(JSON.stringify(l.stats(), null, 2)); } catch(e) { if (e.message && e.message.includes('no such table')) { console.error('Ledger not initialized. Run: npm run ledger:migrate'); process.exit(1); } throw e; }\"",
-    "benchmark": "node scripts/benchmark-tokens.js"
+    "benchmark": "node scripts/benchmark-tokens.js",
+    "consolidate": "node scripts/consolidate.js",
+    "consolidate:watch": "node scripts/consolidate.js --watch",
+    "consolidate:full": "node scripts/consolidate.js --manifest --embeddings"
   },
   "files": [
     "scripts/",

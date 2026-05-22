@@ -102,7 +102,7 @@ var GraphShell = (function () {
 
   async function init(containerId, apiUrl, opts) {
     var container = document.getElementById(containerId);
-    container.innerHTML = '<div style="padding:40px;color:#8b949e;text-align:center">Loading graph...</div>';
+    container.innerHTML = '<div class="empty-state" style="padding:40px"><svg><use href="#icon-graph"/></svg><p>Loading graph...</p></div>';
 
     var res = await fetch(apiUrl);
     var data = await res.json();

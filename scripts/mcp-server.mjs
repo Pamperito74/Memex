@@ -33,6 +33,9 @@ import {
   GetPromptRequestSchema,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
+  ListResourceTemplatesRequestSchema,
+  SubscribeRequestSchema,
+  UnsubscribeRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 
 import { fileURLToPath } from 'url';
@@ -63,6 +66,10 @@ const {
   ledgerSelectContext,
   ledgerStats,
   findDuplicates,
+  handoff,
+  receiveHandoff,
+  sessionReplay,
+  sessionDiff,
 } = require('./mcp-tools.js');
 const { listPrompts, renderPrompt } = require('./mcp-prompts.js');
 
@@ -78,11 +85,15 @@ const server = new Server(
   {
     capabilities: {
       tools: {},
-      resources: {},
+      resources: {
+        subscribe: true,
+      },
       prompts: {},
     },
   }
 );
+
+const resourceSubscriptions = new Set();
 
 // List available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -406,7 +417,80 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: 'object',
           properties: {}
         }
-      }
+      },
+      {
+        name: 'handoff',
+        description: 'Generate a portable context blob for agent-to-agent handoff. Packs project bundle, recent sessions, ledger assertions, and unresolved tensions into a token budget.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            project: {
+              type: 'string',
+              description: 'Project name to generate handoff context for'
+            },
+            context_budget: {
+              type: 'number',
+              description: 'Target token budget (default: 4000)',
+              default: 4000
+            }
+          },
+          required: ['project']
+        }
+      },
+      {
+        name: 'receive_handoff',
+        description: 'Receive a context blob from another agent and confirm injection.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            context_blob: {
+              type: 'string',
+              description: 'The context blob from handoff()'
+            }
+          },
+          required: ['context_blob']
+        }
+      },
+      {
+        name: 'session_replay',
+        description: 'Get the full timeline of events for a session, in chronological order.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            project: {
+              type: 'string',
+              description: 'Project name'
+            },
+            session_id: {
+              type: 'string',
+              description: 'Session ID to replay'
+            }
+          },
+          required: ['project', 'session_id']
+        }
+      },
+      {
+        name: 'session_diff',
+        description: 'Compare two sessions and show what topics changed between them.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            project: {
+              type: 'string',
+              description: 'Project name'
+            },
+            session_id_a: {
+              type: 'string',
+              description: 'First session ID'
+            },
+            session_id_b: {
+              type: 'string',
+              description: 'Second session ID'
+            }
+          },
+          required: ['project', 'session_id_a', 'session_id_b']
+        }
+      },
     ]
   };
 });
@@ -433,6 +517,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   switch (name) {
     case 'remember':
       result = await remember(args);
+      if (result && result.session_id) notifyResourceListChanged();
       break;
 
     case 'neural_search':
@@ -495,6 +580,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       result = ledgerStats();
       break;
 
+    case 'handoff':
+      result = handoff(args.project, args.context_budget || 4000);
+      break;
+
+    case 'receive_handoff':
+      result = receiveHandoff(args.context_blob);
+      break;
+
+    case 'session_replay':
+      result = sessionReplay(args.project, args.session_id);
+      break;
+
+    case 'session_diff':
+      result = sessionDiff(args.project, args.session_id_a, args.session_id_b);
+      break;
+
     default:
       result = { error: `Unknown tool: ${name}` };
   }
@@ -511,25 +612,81 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // List available resources
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
+  const resources = [
+    {
+      uri: 'engram://stats',
+      name: 'Engram Stats',
+      description: 'Overview statistics of the Engram memory and ledger',
+      mimeType: 'application/json'
+    },
+    {
+      uri: 'engram://graph',
+      name: 'Concept Graph',
+      description: 'The full concept relationship graph',
+      mimeType: 'application/json'
+    }
+  ];
+
+  const projects = listProjects();
+  if (Array.isArray(projects)) {
+    for (const p of projects) {
+      resources.push({
+        uri: `engram://projects/${encodeURIComponent(p.project || p.name)}`,
+        name: `Project: ${p.project || p.name}`,
+        description: `Engram project bundle and context`,
+        mimeType: 'application/json'
+      });
+    }
+  }
+
+  const recent = recentSessions(5);
+  if (recent && Array.isArray(recent.results)) {
+    for (const s of recent.results) {
+      resources.push({
+        uri: `engram://sessions/${encodeURIComponent(s.project)}/${encodeURIComponent(s.id)}`,
+        name: `Session: ${s.summary?.substring(0, 60)}`,
+        description: `Session from ${s.date}`,
+        mimeType: 'application/json'
+      });
+    }
+  }
+
+  return { resources };
+});
+
+// List resource URI templates for dynamic resources
+server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
   return {
-    resources: [
+    resourceTemplates: [
       {
-        uri: 'engram://stats',
-        name: 'Engram Stats',
-        description: 'Overview statistics of the Engram memory and ledger',
+        uriTemplate: 'engram://sessions/{project}/{session_id}',
+        name: 'Session Detail',
+        description: 'Full session details by project and session ID',
         mimeType: 'application/json'
       },
       {
-        uri: 'engram://graph',
-        name: 'Concept Graph',
-        description: 'The full concept relationship graph',
+        uriTemplate: 'engram://projects/{project}',
+        name: 'Project Bundle',
+        description: 'Pre-compiled context bundle for a project',
         mimeType: 'application/json'
-      }
+      },
+      {
+        uriTemplate: 'engram://ledger/{plane}',
+        name: 'Ledger Assertions',
+        description: 'Active assertions for a given plane',
+        mimeType: 'application/json'
+      },
+      {
+        uriTemplate: 'engram://ledger/tensions',
+        name: 'Ledger Tensions',
+        description: 'Current unresolved contradictions in the ledger',
+        mimeType: 'application/json'
+      },
     ]
   };
 });
 
-// Handle resource reads
+// Handle resource read
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const { uri } = request.params;
 
@@ -547,8 +704,72 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     };
   }
 
+  if (uri === 'engram://ledger/tensions') {
+    const stats = getStats();
+    const tensions = stats?.tensions || [];
+    return {
+      contents: [{ uri, mimeType: 'application/json', text: JSON.stringify({ tensions }, null, 2) }]
+    };
+  }
+
+  const projectMatch = uri.match(/^engram:\/\/projects\/(.+)$/);
+  if (projectMatch) {
+    const project = decodeURIComponent(projectMatch[1]);
+    const bundle = getBundle(project);
+    return {
+      contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(bundle, null, 2) }]
+    };
+  }
+
+  const sessionMatch = uri.match(/^engram:\/\/sessions\/([^/]+)\/(.+)$/);
+  if (sessionMatch) {
+    const project = decodeURIComponent(sessionMatch[1]);
+    const sessionId = decodeURIComponent(sessionMatch[2]);
+    const session = getSession(project, sessionId);
+    return {
+      contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(session, null, 2) }]
+    };
+  }
+
+  const ledgerMatch = uri.match(/^engram:\/\/ledger\/(.+)$/);
+  if (ledgerMatch) {
+    const plane = decodeURIComponent(ledgerMatch[1]);
+    if (plane === 'tensions') {
+      const stats = getStats();
+      return {
+        contents: [{ uri, mimeType: 'application/json', text: JSON.stringify({ tensions: stats?.tensions || [] }, null, 2) }]
+      };
+    }
+    const assertions = ledgerQuery(plane);
+    return {
+      contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(assertions, null, 2) }]
+    };
+  }
+
   throw new Error(`Unknown resource: ${uri}`);
 });
+
+// Handle resource subscriptions
+server.setRequestHandler(SubscribeRequestSchema, async (request) => {
+  const { uri } = request.params;
+  resourceSubscriptions.add(uri);
+});
+
+// Handle resource unsubscriptions
+server.setRequestHandler(UnsubscribeRequestSchema, async (request) => {
+  const { uri } = request.params;
+  resourceSubscriptions.delete(uri);
+});
+
+function notifyResourceUpdated(uri) {
+  if (resourceSubscriptions.has(uri)) {
+    server.sendResourceUpdated({ uri }).catch(() => {});
+  }
+}
+
+function notifyResourceListChanged() {
+  server.sendResourceListChanged().catch(() => {});
+}
 
 // ─────────────────────────────────────────────────────────────
 // Start Server

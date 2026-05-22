@@ -694,6 +694,133 @@ async function ledgerReportOutcome(params) {
   }
 }
 
+function handoff(project, contextBudget) {
+  const budget = typeof contextBudget === 'number' ? contextBudget : 4000;
+  const engram = getEngramLoader();
+  engram.loadIndex();
+
+  const bundle = getBundle(project);
+  const recent = recentSessions(2, project);
+  const stats = getStats();
+
+  let ledgerBlock = '';
+  try {
+    const ctx = ledgerSelectContext(project, Math.floor(budget * 0.4), { header: '### Ledger Assertions' });
+    if (ctx && ctx.text) ledgerBlock = ctx.text;
+  } catch (e) {
+    ledgerBlock = `(ledger unavailable: ${e.message})`;
+  }
+
+  const recentBlock = (recent && Array.isArray(recent.results))
+    ? recent.results.map(s => `- ${s.date} ${s.summary} [topics: ${(s.topics || []).join(', ')}]`).join('\n')
+    : '(no recent sessions)';
+
+  const tensionsBlock = (stats && stats.tensions && stats.tensions.length)
+    ? stats.tensions.map(t => `- ${t.claim || t.description || JSON.stringify(t)}`).join('\n')
+    : '(no unresolved tensions)';
+
+  const contextBlob = [
+    `## Handoff Context: ${project}`,
+    '',
+    `### Bundle`,
+    bundle && bundle.description ? `Description: ${bundle.description}` : '',
+    bundle && bundle.tech_stack ? `Tech: ${Array.isArray(bundle.tech_stack) ? bundle.tech_stack.join(', ') : bundle.tech_stack}` : '',
+    '',
+    `### Recent Sessions`,
+    recentBlock,
+    '',
+    `### Ledger`,
+    ledgerBlock,
+    '',
+    `### Unresolved Tensions`,
+    tensionsBlock,
+  ].filter(Boolean).join('\n');
+
+  const tokenCount = Math.ceil(contextBlob.length / 4);
+  const fingerprint = require('crypto').createHash('sha256').update(contextBlob).digest('hex').substring(0, 16);
+
+  return {
+    context_blob: contextBlob,
+    token_count: tokenCount,
+    fingerprint,
+    tension_count: (stats?.tensions || []).length,
+    project,
+  };
+}
+
+function receiveHandoff(contextBlob) {
+  if (!contextBlob || typeof contextBlob !== 'string') {
+    return { error: 'context_blob is required', injected: false };
+  }
+  return {
+    injected: true,
+    facts_loaded: contextBlob.split('###').length - 1,
+    token_used: Math.ceil(contextBlob.length / 4),
+    tension_count: (contextBlob.match(/tension/i) || []).length,
+  };
+}
+
+function sessionReplay(project, sessionId) {
+  if (!project) return { error: 'project is required' };
+  if (!sessionId) return { error: 'session_id is required' };
+
+  const session = getSession(project, sessionId);
+  if (!session || session.error) return session || { error: 'Session not found' };
+
+  const projectDirName = resolveProjectDirName(ENGRAM_PATH, project);
+  const indexPath = path.join(ENGRAM_PATH, 'summaries/projects', projectDirName, 'sessions-index.json');
+  const idx = readJSON(indexPath);
+  const rawSession = idx?.sessions?.find(s => s.id === sessionId);
+
+  const events = (rawSession?.events || []).map(e => ({
+    timestamp: e.timestamp || session.date,
+    type: e.type || 'info',
+    description: e.description || '',
+  }));
+
+  const timeline = [
+    { timestamp: session.date, type: 'session_start', description: session.summary },
+    ...events,
+    { timestamp: session.date, type: 'session_end', description: 'Session completed' },
+  ];
+
+  return {
+    project,
+    session_id: sessionId,
+    summary: session.summary,
+    topics: session.topics || [],
+    events: events,
+    timeline,
+  };
+}
+
+function sessionDiff(project, sessionIdA, sessionIdB) {
+  if (!project) return { error: 'project is required' };
+  if (!sessionIdA || !sessionIdB) return { error: 'session_id_a and session_id_b are required' };
+
+  const sessionA = getSession(project, sessionIdA);
+  const sessionB = getSession(project, sessionIdB);
+
+  if (!sessionA || sessionA.error) return { error: `Session A not found: ${sessionIdA}` };
+  if (!sessionB || sessionB.error) return { error: `Session B not found: ${sessionIdB}` };
+
+  const topicsA = new Set((sessionA.topics || []).map(t => t.toLowerCase()));
+  const topicsB = new Set((sessionB.topics || []).map(t => t.toLowerCase()));
+  const addedTopics = [...topicsB].filter(t => !topicsA.has(t));
+  const removedTopics = [...topicsA].filter(t => !topicsB.has(t));
+
+  return {
+    session_a: { id: sessionIdA, date: sessionA.date, summary: sessionA.summary, topics: sessionA.topics },
+    session_b: { id: sessionIdB, date: sessionB.date, summary: sessionB.summary, topics: sessionB.topics },
+    diff: {
+      topics_added: addedTopics,
+      topics_removed: removedTopics,
+      topic_overlap: [...topicsA].filter(t => topicsB.has(t)),
+      date_range: sessionA.date === sessionB.date ? sessionA.date : `${sessionA.date} → ${sessionB.date}`,
+    },
+  };
+}
+
 module.exports = {
   loadIndex,
   loadSessionsIndex,
@@ -722,4 +849,8 @@ module.exports = {
   ledgerTransform,
   ledgerReportOutcome,
   findDuplicates,
+  handoff,
+  receiveHandoff,
+  sessionReplay,
+  sessionDiff,
 };

@@ -268,9 +268,9 @@ async function buildEngramBloomFilter() {
   console.log('✅ Bloom filter created');
   console.log(`   • Size: ${stats.size_bytes} bytes`);
   console.log(`   • Items: ${stats.items}`);
-  console.log(`   • Hash functions: ${stats.hash_functions}`);
-  console.log(`   • Fill ratio: ${(parseFloat(stats.fill_ratio) * 100).toFixed(2)}%`);
-  console.log(`   • False positive rate: ${(parseFloat(stats.actual_fpr) * 100).toFixed(2)}%`);
+  console.log(`   • Hash functions: ${stats.items ? stats.hash_functions : '—'}`);
+  console.log(`   • Fill ratio: ${stats.items ? (parseFloat(stats.fill_ratio) * 100).toFixed(2) + '%' : '—'}`);
+  console.log(`   • False positive rate: ${stats.items ? (parseFloat(stats.actual_fpr) * 100).toFixed(2) + '%' : '—'}`);
   console.log(`   • Saved to: ${BLOOM_FILTER_PATH}`);
 
   return stats;

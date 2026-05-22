@@ -65,7 +65,17 @@ function requireApiKey(req, res, next) {
 // Rate limiter (in-memory, no deps)
 // ─────────────────────────────────────────────────────────────
 const _rateLimitWindows = new Map();
+var _rateLimitTimer = null;
 function rateLimit(windowMs, max) {
+  if (!_rateLimitTimer) {
+    _rateLimitTimer = setInterval(function () {
+      var now = Date.now();
+      _rateLimitWindows.forEach(function (entry, key) {
+        if (now - entry.start > windowMs) _rateLimitWindows.delete(key);
+      });
+    }, windowMs * 2);
+    _rateLimitTimer.unref();
+  }
   return (req, res, next) => {
     const key = req.socket?.remoteAddress || 'local';
     const now = Date.now();
@@ -86,8 +96,9 @@ function rateLimit(windowMs, max) {
 // Helpers
 // ─────────────────────────────────────────────────────────────
 
-/** Sanitize project name to prevent path traversal */
+/** Sanitize project name to prevent path traversal. Returns empty string for invalid input. */
 function sanitizeProject(name) {
+  if (typeof name !== 'string' || !name.trim()) return '';
   return name.replace(/[^a-zA-Z0-9._-]/g, '');
 }
 
@@ -176,6 +187,7 @@ app.get('/api/projects', (req, res) => {
 app.get('/api/sessions/:project', (req, res) => {
   try {
     const project = sanitizeProject(req.params.project);
+    if (!project) return res.status(400).json({ error: 'Invalid project name' });
     const limit = clampLimit(req.query.limit, 100, 500);
 
     const sessions = engram.listSessions(project);
@@ -479,6 +491,7 @@ app.get('/api/assertions/:id', (req, res) => {
 app.get('/api/sessions/:project/:sessionId', (req, res) => {
   try {
     const project = sanitizeProject(req.params.project);
+    if (!project) return res.status(400).json({ error: 'Invalid project name' });
     const sessionId = req.params.sessionId;
 
     const sessions = engram.listSessions(project);
@@ -609,8 +622,12 @@ app.get('/api/agentbridge/status', async (req, res) => {
  * Start event polling
  */
 app.post('/api/agentbridge/start', requireApiKey, (req, res) => {
-  const started = consumer.start();
-  res.json({ started, status: consumer.getStatus() });
+  try {
+    const started = consumer.start();
+    res.json({ started, status: consumer.getStatus() });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 /**
@@ -626,24 +643,40 @@ app.post('/api/agentbridge/stop', requireApiKey, (req, res) => {
 // Health Check
 // ─────────────────────────────────────────────────────────────
 
+function healthResponse(status) {
+  return {
+    status: status,
+    uptime: Math.floor(process.uptime()),
+    version: engram.index?.v || 'unknown',
+    timestamp: new Date().toISOString(),
+  };
+}
+
+app.get('/api/health', (req, res) => {
+  try {
+    ensureIndexLoaded();
+    res.json(healthResponse('healthy'));
+  } catch {
+    res.status(503).json(healthResponse('unhealthy'));
+  }
+});
+
 app.get('/health', (req, res) => {
   try {
     ensureIndexLoaded();
-    res.status(200).json({
-      status: 'healthy',
-      uptime: Math.floor(process.uptime()),
-      version: engram.index?.v || 'unknown',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (e) {
-    res.status(503).json({
-      status: 'unhealthy',
-      uptime: Math.floor(process.uptime()),
-      version: engram.index?.v || 'unknown',
-      timestamp: new Date().toISOString(),
-      error: e.message,
-    });
+    res.status(200).json(healthResponse('healthy'));
+  } catch {
+    res.status(503).json(healthResponse('unhealthy'));
   }
+});
+
+// ─────────────────────────────────────────────────────────────
+// Global error handler
+// ─────────────────────────────────────────────────────────────
+
+app.use(function (err, req, res, next) {
+  console.error('Unhandled error:', err.message || err);
+  res.status(500).json({ error: err.message || 'Internal server error' });
 });
 
 // ─────────────────────────────────────────────────────────────

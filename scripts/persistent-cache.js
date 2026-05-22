@@ -17,7 +17,7 @@ const { encode: msgpackEncode, decode: msgpackDecode } = require('@msgpack/msgpa
 const { resolveEngramPath } = require('./paths');
 
 const ENGRAM_PATH = resolveEngramPath(__dirname);
-const CACHE_DB_PATH = path.join(ENGRAM_PATH, '.cache', 'engram.db');
+const CACHE_DB_PATH = path.join(ENGRAM_PATH, '.cache', 'engram-cache.db');
 const DEFAULT_TTL = 60 * 60 * 1000; // 60 minutes in milliseconds
 const DEFAULT_MAX_ENTRIES = 1000; // Maximum number of cache entries (LRU eviction)
 

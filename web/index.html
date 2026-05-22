@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Codicil - Neural Memory</title>
+  <title>Engram — Neural Memory</title>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231b1f23'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='%232da44e'%3EE%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,18 +13,21 @@
     <!-- Header -->
     <header>
       <div class="logo">
-        <span class="logo-icon">🧠</span>
-        <span class="logo-text">Codicil</span>
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">Engram</span>
       </div>
       <nav id="main-nav" aria-label="Main navigation">
         <button class="nav-btn active" data-view="dashboard" aria-label="Switch to Dashboard view" aria-pressed="true">Dashboard</button>
         <button class="nav-btn" data-view="search" aria-label="Switch to Search view" aria-pressed="false">Search</button>
-        <a href="/graph-concepts.html" class="nav-btn" data-view="graph" aria-label="Open concept graph">Graph</a>
+        <button class="nav-btn" data-view="graph" aria-label="Switch to Graph view" aria-pressed="false">Graph</button>
         <button class="nav-btn" data-view="sessions" aria-label="Switch to Sessions view" aria-pressed="false">Sessions</button>
         <button class="nav-btn" data-view="assertions" aria-label="Switch to Assertions view" aria-pressed="false">Assertions</button>
       </nav>
-      <div class="stats-mini" id="stats-mini">
-        <span id="total-sessions">-</span> sessions
+      <div class="header-right">
+        <div class="stats-mini" id="stats-mini">
+          <span id="total-sessions">-</span> sessions
+        </div>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle theme">🌙</button>
       </div>
     </header>
 
@@ -51,15 +55,8 @@
           </div>
 
           <div class="card">
-            <h3>Projects</h3>
-            <div id="projects-list" class="projects-list">
-              <div class="loading">Loading...</div>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3>Top Topics</h3>
-            <div id="topics-cloud" class="topics-cloud">
+            <h3>AgentBridge</h3>
+            <div id="agentbridge-status" class="bridge-status">
               <div class="loading">Loading...</div>
             </div>
           </div>
@@ -72,8 +69,15 @@
           </div>
 
           <div class="card">
-            <h3>AgentBridge</h3>
-            <div id="agentbridge-status" class="bridge-status">
+            <h3>Projects</h3>
+            <div id="projects-list" class="projects-list">
+              <div class="loading">Loading...</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Top Topics</h3>
+            <div id="topics-cloud" class="topics-cloud">
               <div class="loading">Loading...</div>
             </div>
           </div>
@@ -106,16 +110,51 @@
 
       <!-- Graph View -->
       <section id="view-graph" class="view">
+        <div class="graph-toolbar">
+          <div class="graph-type-toggle">
+            <button class="graph-type-btn active" data-type="concepts">Concepts</button>
+            <button class="graph-type-btn" data-type="projects">Projects</button>
+          </div>
+          <div class="graph-search">
+            <input type="text" id="graph-search" placeholder="Filter...">
+          </div>
+        </div>
         <div class="graph-container">
           <div id="graph-canvas"></div>
           <div class="graph-legend">
-            <div><span class="legend-dot hot"></span> Hot (5+ sessions)</div>
-            <div><span class="legend-dot warm"></span> Warm (3-4 sessions)</div>
-            <div><span class="legend-dot normal"></span> Normal (2 sessions)</div>
-            <div><span class="legend-dot cold"></span> Cold (1 session)</div>
+            <span class="legend-dot hot"></span> Hot
+            <span class="legend-dot warm"></span> Warm
+            <span class="legend-dot normal"></span> Normal
+            <span class="legend-dot cold"></span> Cold
           </div>
-          <div class="graph-search">
-            <input type="text" id="graph-search" placeholder="Find concept...">
+        </div>
+      </section>
+
+      <!-- Session Detail View -->
+      <section id="view-session" class="view">
+        <div id="session-detail">
+          <div class="session-detail-header">
+            <button id="session-back" class="back-btn" aria-label="Back to sessions">&larr; Back</button>
+            <span class="session-detail-project" id="session-detail-project"></span>
+            <span class="session-detail-date" id="session-detail-date"></span>
+          </div>
+          <div class="session-detail-body">
+            <div class="session-detail-section">
+              <h3>Summary</h3>
+              <p id="session-detail-summary" class="session-detail-text"></p>
+            </div>
+            <div class="session-detail-section">
+              <h3>Content</h3>
+              <pre id="session-detail-content" class="session-detail-code"></pre>
+            </div>
+            <div class="session-detail-section">
+              <h3>Topics</h3>
+              <div id="session-detail-topics" class="session-detail-topics"></div>
+            </div>
+            <div class="session-detail-section">
+              <h3>Metadata</h3>
+              <div id="session-detail-meta" class="session-detail-meta"></div>
+            </div>
           </div>
         </div>
       </section>
@@ -181,6 +220,18 @@
     </div>
   </aside>
 
+  <!-- Footer -->
+  <footer class="main-footer">
+    <div class="footer-content">
+      <p>&copy; 2025 TinyDarkForge. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="https://github.com/tinydarkforge/Engram" target="_blank" rel="noopener">GitHub</a>
+        <a href="mailto:hello@tinydarkforge.com">Support</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="graph-shell.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

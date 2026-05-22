@@ -1,17 +1,15 @@
 #!/bin/bash
-# Auto-load Codicil on Claude startup
+# Auto-load Engram on Claude startup
 
-CODICIL_PATH="${CODICIL_PATH:-$HOME/code/cirrus/DevOps/Codicil}"
+ENGRAM_PATH="${ENGRAM_PATH:-$HOME/code/tinydarkforge/Engram}"
 
-# Check if Codicil exists
-if [ ! -d "$CODICIL_PATH" ]; then
-  echo "⚠️  Codicil not found at $CODICIL_PATH"
-  exit 0
-fi
+# Check if Engram exists
 
-# Load Codicil context
-echo "🧠 Loading Codicil..."
-node "$CODICIL_PATH/scripts/codicil-loader.js" startup
+  echo "⚠️  Engram not found at $ENGRAM_PATH"
+
+# Load Engram context
+echo "⬡ Loading Engram..."
+node "$ENGRAM_PATH/scripts/engram-loader.js" startup
 
 # Sync latest knowledge (background, non-blocking)
-(cd "$CODICIL_PATH" && git pull --quiet origin main 2>/dev/null &)
+(cd "$ENGRAM_PATH" && git pull --quiet origin main 2>/dev/null &)

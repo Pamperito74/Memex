@@ -51,9 +51,10 @@ class BloomFilter {
    * Uses double hashing: h_i(x) = h1(x) + i * h2(x)
    */
   getHashes(str) {
-    // Use two hash functions (MD5 and SHA1 for speed)
-    const hash1 = crypto.createHash('md5').update(str.toLowerCase()).digest();
-    const hash2 = crypto.createHash('sha1').update(str.toLowerCase()).digest();
+    var normalized = str.toLowerCase();
+    var full = crypto.createHash('blake2b512').update(normalized).digest();
+    var hash1 = full.subarray(0, 4);
+    var hash2 = full.subarray(4, 8);
 
     const hashes = [];
     for (let i = 0; i < this.numHashFunctions; i++) {

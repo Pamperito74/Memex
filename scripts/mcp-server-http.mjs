@@ -41,6 +41,11 @@ const {
   rebuildIndex,
   getStats,
   getGraphSummary,
+  ledgerIngest,
+  ledgerQuery,
+  ledgerSelectContext,
+  ledgerStats,
+  findDuplicates,
 } = require('./mcp-tools.js');
 const { listPrompts, renderPrompt } = require('./mcp-prompts.js');
 
@@ -278,6 +283,75 @@ function createServer() {
             },
           },
         },
+        {
+          name: 'find_duplicates',
+          description: 'Find duplicate or near-duplicate sessions using embedding similarity. Returns pairs of sessions above the similarity threshold.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              threshold: {
+                type: 'number',
+                description: 'Similarity threshold 0–1 (default: 0.85). Lower = more results.',
+                default: 0.85,
+              },
+              limit: {
+                type: 'number',
+                description: 'Max duplicate pairs to return (default: 20)',
+                default: 20,
+              },
+            },
+          },
+        },
+        {
+          name: 'ledger_ingest',
+          description: 'Write an assertion to the ledger. Creates new or reinforces existing assertions.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              plane: { type: 'string', description: 'Plane identifier (e.g., user:alice, project:Engram)' },
+              class_: { type: 'string', description: 'Assertion class', enum: ['monotonic', 'episodic', 'state_bound', 'contextual'] },
+              claim: { type: 'string', description: 'The assertion claim (max 500 chars)' },
+              body: { type: 'string', description: 'Optional extended text' },
+              confidence: { type: 'number', description: 'Confidence 0–1 (default 0.5)' },
+              source_spans: { type: 'array', items: { type: 'string' }, description: 'Source references (required)' },
+              density_hint: { type: 'string', description: 'Rendering hint' },
+              staleness_model: { type: 'string', description: 'Staleness model' },
+            },
+            required: ['plane', 'class_', 'claim', 'source_spans'],
+          },
+        },
+        {
+          name: 'ledger_query',
+          description: 'Query active assertions by plane.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              plane: { type: 'string', description: 'Plane identifier' },
+            },
+            required: ['plane'],
+          },
+        },
+        {
+          name: 'ledger_select_context',
+          description: 'Select and render ranked assertions for context injection.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              plane: { type: 'string', description: 'Plane identifier' },
+              budget: { type: 'number', description: 'Maximum characters' },
+              header: { type: 'string', description: 'Optional markdown header' },
+            },
+            required: ['plane', 'budget'],
+          },
+        },
+        {
+          name: 'ledger_stats',
+          description: 'Get ledger statistics: counts by status, plane, and tensions.',
+          inputSchema: {
+            type: 'object',
+            properties: {},
+          },
+        },
       ],
     };
   });
@@ -341,6 +415,26 @@ function createServer() {
 
       case 'rebuild_index':
         result = rebuildIndex(args || {});
+        break;
+
+      case 'find_duplicates':
+        result = await findDuplicates({ threshold: args?.threshold, limit: args?.limit });
+        break;
+
+      case 'ledger_ingest':
+        result = ledgerIngest(args || {});
+        break;
+
+      case 'ledger_query':
+        result = ledgerQuery(args.plane, args || {});
+        break;
+
+      case 'ledger_select_context':
+        result = ledgerSelectContext(args.plane, args.budget || 2000, args || {});
+        break;
+
+      case 'ledger_stats':
+        result = ledgerStats();
         break;
 
       default:

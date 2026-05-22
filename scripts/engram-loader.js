@@ -36,8 +36,7 @@ class Engram {
         ttl: 60 * 60 * 1000 // 60 minutes
       });
     } catch (e) {
-      const cachePath = path.join(ENGRAM_PATH, '.cache', 'engram.db');
-      console.warn(`⚠️  Persistent cache disabled: ${e.message}. Remove ${cachePath} and restart to rebuild.`);
+      console.warn(`⚠️  Persistent cache disabled: ${e.message}. Remove .cache/engram-cache.db and restart to rebuild.`);
       this.persistentCache = {
         get: () => null,
         set: () => {},
@@ -223,10 +222,9 @@ class Engram {
       return null;
     }
 
-    const metadataFile = path.join(
-      ENGRAM_PATH,
-      this.index.p[projectName].mf
-    );
+    var mf = this.index.p[projectName].mf;
+    if (!mf) return this.index.p[projectName];
+    const metadataFile = path.join(ENGRAM_PATH, mf);
 
     if (!fs.existsSync(metadataFile)) {
       return this.index.p[projectName]; // Return quick_ref only

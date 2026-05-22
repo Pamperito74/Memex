@@ -15,6 +15,11 @@ body {
   font-size: var(--font-sm);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: var(--transition-theme);
+}
+
+.card, .sidebar, .topbar, .main-footer, .detail-panel, input, select, .sessions-main, .graph-container, .search-result, .assertion-item, .session-card, .session-detail-code {
+  transition: var(--transition-theme), box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 ::selection {
@@ -1395,6 +1400,9 @@ main {
    ───────────────────────────────────────────────────────────── */
 
 @media (max-width: 1024px) {
+  .graph-container {
+    height: calc(100vh - 250px);
+  }
   .sidebar {
     width: 56px;
   }
@@ -1573,5 +1581,13 @@ main {
     flex-wrap: wrap;
     justify-content: center;
     gap: var(--space-2) var(--space-4);
+  }
+
+  .graph-container {
+    height: 300px;
+  }
+
+  .graph-legend {
+    display: none;
   }
 }

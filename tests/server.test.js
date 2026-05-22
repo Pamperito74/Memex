@@ -30,6 +30,16 @@ function fetch(url) {
   });
 }
 
+function fetchRaw(url) {
+  return new Promise((resolve, reject) => {
+    http.get(url, { agent: false }, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data }));
+    }).on('error', reject);
+  });
+}
+
 function postJSON(url, body) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
@@ -124,6 +134,38 @@ describe('server API', () => {
     } else {
       done();
     }
+  });
+
+  it('GET / (index.html) returns 200 with correct content-type', async () => {
+    const { status, headers } = await fetchRaw(`${baseUrl}/`);
+    assert.equal(status, 200);
+    assert.ok(headers['content-type']?.includes('text/html'));
+  });
+
+  it('GET /style.css returns 200 with correct content-type', async () => {
+    const { status, headers } = await fetchRaw(`${baseUrl}/style.css`);
+    assert.equal(status, 200);
+    assert.ok(headers['content-type']?.includes('text/css'));
+  });
+
+  it('GET /app.js returns 200', async () => {
+    const { status } = await fetchRaw(`${baseUrl}/app.js`);
+    assert.equal(status, 200);
+  });
+
+  it('GET /tokens.css returns 200', async () => {
+    const { status } = await fetchRaw(`${baseUrl}/tokens.css`);
+    assert.equal(status, 200);
+  });
+
+  it('GET /graph-shell.js returns 200', async () => {
+    const { status } = await fetchRaw(`${baseUrl}/graph-shell.js`);
+    assert.equal(status, 200);
+  });
+
+  it('GET /nonexistent.html returns 404', async () => {
+    const { status } = await fetchRaw(`${baseUrl}/nonexistent.html`);
+    assert.equal(status, 404);
   });
 
   it('GET /api/stats returns overview', async () => {

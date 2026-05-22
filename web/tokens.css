@@ -79,6 +79,7 @@
   --focus-ring: #10b981;
   --skeleton-base: #27272a;
   --skeleton-shine: #3f3f46;
+  --transition-theme: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
 [data-theme="light"] {

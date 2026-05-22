@@ -1,133 +1,65 @@
-<!-- markdownlint-disable MD033 MD041 -->
-
-```text
-    █▀▀▀▀▜▜▜▜▜▀▀█       █████ █   █ █████ ████   ███  █   █
-    █           █       █     ██  █ █     █   █ █   █ ██ ██
-    █    ◓  ◓   █       ████  █ █ █ █  ██ ████  █████ █ █ █
-    █       ◞   █       █     █  ██ █   █ █  █  █   █ █   █
-    ▜██▄▄▄▄▄▄▄██▛       █████ █   █ █████ █   █ █   █ █   █   
-        ⬛ ⬛ 
-                        ━━━━━━━━━━ MEMORY LEDGER ━━━━━━━━━━━━━
-                        Sessions · Facts · Confidence · MCP
-                            Local-first — one ledger, one
-                            confidence model, one context
-                            budget. MIT · No account · No tel.
-```
+# Engram
 
 <p align="center">
-  <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-00cc66.svg?style=flat-square&labelColor=0a0a0a"></a>
-  <img alt="node" src="https://img.shields.io/badge/node-%E2%89%A520-00cc66.svg?style=flat-square&labelColor=0a0a0a">
-  <img alt="mcp" src="https://img.shields.io/badge/MCP-native-00cc66.svg?style=flat-square&labelColor=0a0a0a">
-  <img alt="platform" src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-00cc66.svg?style=flat-square&labelColor=0a0a0a">
-  <a href="SECURITY.md"><img alt="security" src="https://img.shields.io/badge/security-policy-00cc66.svg?style=flat-square&labelColor=0a0a0a"></a>
-  <a href="https://github.com/tinydarkforge/Engram/actions/workflows/ci.yml"><img alt="ci" src="https://github.com/TinyDarkForge/Engram/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-10b981?style=flat-square&labelColor=18181b"></a>
+  <img alt="Node" src="https://img.shields.io/badge/node-%E2%89%A520-10b981?style=flat-square&labelColor=18181b">
+  <img alt="MCP" src="https://img.shields.io/badge/MCP-native-10b981?style=flat-square&labelColor=18181b">
+  <img alt="Platform" src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux-10b981?style=flat-square&labelColor=18181b">
+  <a href="https://github.com/tinydarkforge/Engram/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/TinyDarkForge/Engram/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://www.npmjs.com/package/@tinydarkforge/engram"><img alt="npm" src="https://img.shields.io/npm/v/@tinydarkforge/engram?style=flat-square&labelColor=18181b&color=10b981"></a>
 </p>
 
-> **Engram** is a local-first memory and assertion ledger for AI coding agents. It persists session notes across every repo, ranks facts by confidence and corroboration, surfaces contradictions, and feeds the whole thing to Claude Code over MCP. No account. No telemetry. Local files only.
-
-> **Status:** Pre-1.0 (`v4.0.3`). Available on npm. MCP server is stable; assertion ledger is active development.
+**Engram** is a local-first memory and assertion ledger for AI coding agents. It persists engineering context, ranks facts by confidence and corroboration, surfaces contradictions, and exposes everything to Claude Code over the Model Context Protocol (MCP). No cloud dependency. No telemetry. Local files only.
 
 ---
 
-## ░▒▓█ TL;DR
+## Quick start
 
 ```bash
-git clone https://github.com/tinydarkforge/Engram.git
-cd Engram && npm install && npm run setup
-claude mcp add engram -s user -- node "$(pwd)/scripts/mcp-server.mjs"
+npm install -g @tinydarkforge/engram
+engram setup
+claude mcp add engram -s user -- engram mcp
 ```
 
-Engram is now a tool in every Claude Code session. It remembers what you did, ranks what it knows, and injects a budget-capped slice of context on demand — stopping at the earliest retrieval layer that answers the query.
+Engram is now available as a tool in every Claude Code session. It remembers what you did across every repository, ranks what it knows, and injects a budget-capped slice of context on demand.
 
 ---
 
-## ░▒▓█ What it does today
+## How it works
 
-Engram captures engineering work and exposes it as structured memory:
+Engram captures engineering work and stores it in two layers:
 
-- **Session memory** — Git-hook capture or manual `remember`. Sessions carry notes, topics, diffs, test deltas. Per-project, per-repo, across every codebase on your machine.
-- **Assertion ledger** — SQLite-backed fact store. Every claim has confidence `[0.0–1.0]`, status (`tentative → established → fossilized`), quorum count, lineage, and decay. Contradictions surface as unresolved tensions.
-- **Token-efficient retrieval** — Four-layer stack (bloom filter → index → session detail → ledger). Stops at the earliest layer that answers the query. 80% of queries answered from a 4 KB index. Context is always token-budgeted by the caller.
-- **MCP-native** — stdio and Streamable HTTP transport. Tools: `neural_search`, `remember`, `ledger_ingest`, `ledger_query`, `ledger_select_context`, `cross_project_search`, `get_bundle`, `recent_sessions`.
-- **Dashboard + HTTP API** — Local web UI at `:3000` for browsing sessions, inspecting ledger state, reviewing tensions.
+**Session memory** — Git-hook or manual `engram remember` saves notes, topics, diffs, and test deltas to a per-project index. Every repo on your machine gets its own namespace.
 
-Engram does not call any remote model by default. Semantic search runs a local ONNX embedding model (`@huggingface/transformers`) that loads lazily on the first semantic query. If you never invoke semantic search, no model is ever downloaded.
+**Assertion ledger** — A SQLite-backed fact store. Every claim records confidence (`0.0–1.0`), status (`tentative → established → fossilized`), quorum count, decay model, lineage, and tension markers. Contradictions surface automatically as unresolved tensions.
 
----
+### Retrieval
 
-## ░▒▓█ How retrieval works
+Queries traverse four layers, stopping at the earliest one that answers:
 
-Queries traverse four layers, stopping as early as possible:
+| Layer | Size | Latency | Role |
+|-------|------|---------|------|
+| Bloom filter | 243 B | ~0.1 ms | Instant *"not known"* — zero tokens consumed |
+| Session index | ~4 KB | ~10 ms | Compact summaries — answers ~80% of queries |
+| Session detail | per-file | ~5 ms | Full content, lazy-loaded on demand |
+| Ledger | ~2 KB/fact | 5–15 ms | Ranked facts with confidence, quorum, tension |
 
-| Layer              | Size      | Latency | Role                                                      |
-|--------------------|-----------|---------|-----------------------------------------------------------|
-| **Bloom filter**   | 243 bytes | 0.1 ms  | Instant *"not known"* — zero tokens consumed              |
-| **Index**          | 4 KB      | ~10 ms  | Compact summaries — answers 80% of queries                |
-| **Session detail** | per-file  | ~5 ms   | Lazy-loaded on demand                                     |
-| **Ledger**         | ~2 KB/fact| 5–15 ms | Ranked facts with confidence, quorum, tension, lineage    |
+Results are packed into a caller-specified token budget using `decay × status × quorum × tension × weight`.
 
-Facts are ranked by `decay × status × quorum × tension × weight` and packed into a caller-specified token budget.
+**Semantic search** uses a local ONNX embedding model (`@huggingface/transformers`) that loads lazily on the first semantic query. Text search and keyword recall work without it.
 
 ---
 
-## ░▒▓█ Assertion ledger
+## Install
 
-The ledger is where session notes become structured, queryable knowledge. Every assertion records:
-
-- **Plane** — authority scope (`user:alice`, `project:engram`, `session:xyz`)
-- **Claim** — terse fact text
-- **Confidence** — `[0.0–1.0]`, starts uncertain, grows with corroboration
-- **Quorum** — independent sources confirming the fact
-- **Status** — `tentative` → `established` → `fossilized`
-- **Decay model** — `flat`, `exponential`, `episodic`, `state_bound`, `contextual`
-- **Lineage** — which sessions contributed
-- **Tension** — automatic negation-based contradiction detection
-
-Tensions surface as alerts; unresolved ones downweight their claims in context selection.
-
----
-
-## ░▒▓█ Positioning
-
-Engram is **not** a hosted memory SaaS, a vector-DB-as-a-service, or a RAG framework. It is **a local ledger and MCP server** for engineering context.
-
-| Alternative      | When to pick it instead of Engram                              |
-|------------------|-----------------------------------------------------------------|
-| **mem0**         | You want hosted memory, team sync, managed upgrades.            |
-| **Letta / Zep**  | You want agent-framework primitives and hosted chat state.      |
-| **Plain RAG**    | You only need retrieval over static docs, no fact lifecycle.    |
-| **Raw SQLite**   | You want a schema you control and don't need MCP or ranking.    |
-
-**Engram's niche:** local-first, confidence-weighted, contradiction-aware, token-budgeted context for AI coding agents. Runs fully offline. If you want dashboards-as-a-service or team-wide sync, pick mem0 or Zep.
-
-| Feature                              | **Engram** | mem0        | Letta / Zep |
-|--------------------------------------|:-----------:|:-----------:|:-----------:|
-| Local-first (no cloud required)      | Yes         | No          | No          |
-| Assertion ledger (confidence/quorum) | Yes         | No          | No          |
-| Contradiction detection              | Yes         | No          | No          |
-| MCP-native (Claude Code)             | Yes         | No          | No          |
-| Git-hook session capture             | Yes         | Partial     | Partial     |
-| Token-efficient retrieval            | Yes (budgeted)| No        | No          |
-| Runs fully offline                   | Yes         | No          | No          |
-
----
-
-## ░▒▓█ Prerequisites
-
-- **Node.js** `>=20`
-- **macOS** or **Linux**. Windows not supported (shell scripts + symlinks).
-- **First semantic query:** downloads a ~100 MB local embedding model (`@huggingface/transformers`). Text search (`npm run search`) and keyword recall work without it.
-
----
-
-## ░▒▓█ Install
+### Global (recommended)
 
 ```bash
 npm install -g @tinydarkforge/engram
 engram setup
 ```
 
-Or from source:
+### From source
 
 ```bash
 git clone https://github.com/tinydarkforge/Engram.git
@@ -138,96 +70,99 @@ npm run setup
 
 ### Connect Claude Code
 
-**npm install (global):**
 ```bash
+# Global install
 claude mcp add engram -s user -- engram mcp
-```
 
-**From source:**
-```bash
+# Source install  
 claude mcp add engram -s user -- node "$(pwd)/scripts/mcp-server.mjs"
 ```
 
-
 ---
 
-## ░▒▓█ Usage
+## Usage
 
 ```bash
 # Save a session
 engram remember "Implemented OAuth callback handling" --topics auth,oauth
 
-# Interactive save
+# Interactive session capture
 engram remember --interactive
 
-# Git-hook capture (auto-save on commit)
-./scripts/git-hook-capture.sh install   # from source clone
-
-# Semantic search
+# Search across all projects
 engram semantic "authentication work"
-
-# Keyword search
 engram search "oauth"
 
-# Status
+# View status and ledger health
 engram status
 
-# Launch dashboard
-engram start   # http://127.0.0.1:3000/
-
-# Ledger CLI
-engram status   # includes ledger health
-npm run ledger:stats   # from source clone
+# Launch the web dashboard
+engram start   # → http://127.0.0.1:3000
 ```
 
+### MCP tools (available in Claude Code)
+
+Engram exposes tools via MCP for session search, ledger ingestion, context selection, cross-project search, and agent handoff. Run `engram mcp` to start the MCP server.
 
 ---
 
-## ░▒▓█ Dashboard + API
+## Features
 
-```bash
-node scripts/server.js
+| | Engram | mem0 | Letta / Zep |
+|---|---|---|---|
+| Local-first (no cloud) | Yes | No | No |
+| Assertion ledger (confidence, quorum, status) | Yes | No | No |
+| Contradiction detection | Yes | No | No |
+| MCP-native (Claude Code) | Yes | No | No |
+| Git-hook session capture | Yes | Partial | Partial |
+| Token-budgeted retrieval | Yes | No | No |
+| Semantic search (local ONNX) | Yes | Yes | Yes |
+| Cross-session diff | Yes | No | No |
+| Agent handoff | Yes | Limited | Limited |
+| MCP Resources with subscriptions | Yes | No | No |
+
+---
+
+## Prerequisites
+
+- **Node.js** `>=20`
+- **macOS** or **Linux** (Windows not supported — shell scripts and symlinks)
+- **Semantic search** downloads a ~100 MB ONNX embedding model on first query. Keyword search works without it.
+
+---
+
+## Security
+
+- **No network calls** unless you opt in. The embedding model is downloaded once and cached locally. If you never invoke semantic search, nothing is fetched.
+- **No telemetry.** Engram never phones home.
+- **Local files only.** Session data lives under `~/.engram/summaries/` and the ledger DB in `~/.engram/.cache/engram.db`.
+- Reporting vulnerabilities: see [SECURITY.md](SECURITY.md).
+
+---
+
+## Architecture
+
 ```
-
-- Dashboard: `http://127.0.0.1:3000/`
-- API:       `http://127.0.0.1:3000/api/stats`
-- Health:    `http://127.0.0.1:3000/health`
-
-The dashboard is read-only by default. Ledger mutations require the MCP or CLI path.
-
----
-
-## ░▒▓█ Security
-
-- **No network calls** unless you opt in. The embedding model downloads lazily on the first semantic query and is then cached locally — if you never invoke semantic search, nothing is fetched.
-- **No telemetry.** Engram does not phone home. Ever.
-- **Local files only.** All session data lives under the repo in `summaries/` and the ledger DB in `.cache/engram.db`.
-- **Vuln disclosure:** [`SECURITY.md`](SECURITY.md).
-
----
-
-## ░▒▓█ Repo layout
-
-```text
-scripts/     runtime, CLI, servers, MCP tools, ledger
+scripts/     Runtime, CLI, MCP servers, ledger, consolidation
+web/         Dashboard UI (Express + static files)
 tests/       29 test files (node:test)
-web/         dashboard UI (static)
-schemas/     JSON schemas for sessions + ledger
+schemas/     JSON schemas for sessions and ledger
 migrations/  SQLite schema migrations
-examples/    curated session records
-summaries/   per-project session indexes + records
+examples/    Curated session records
 ```
 
----
+Engram runs two servers:
+- **HTTP API + Dashboard** (port 3000) — REST endpoints and web UI
+- **MCP server** (port 3001) — Streamable HTTP and stdio transports for Claude Code
 
-## ░▒▓█ Platform support
-
-| Platform | Status                                       |
-|----------|----------------------------------------------|
-| macOS    | Supported                                    |
-| Linux    | Supported                                    |
-| Windows  | Not supported (shell scripts, POSIX symlinks)|
+Both can run simultaneously. The MCP server accepts optional API key authentication.
 
 ---
 
-<p align="center"><em>Engram — because every agent deserves a ledger, not a goldfish bowl.</em></p>
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+<p align="center"><a href="https://github.com/tinydarkforge/Engram">GitHub</a> · <a href="mailto:hello@tinydarkforge.com">Contact</a></p>

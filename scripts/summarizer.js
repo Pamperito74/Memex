@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable */
 
 /**
  * Provider-agnostic AI summarizer for Engram session auto-summarization.
@@ -147,7 +146,7 @@ class Summarizer {
   }
 
   async _fetch(url, options) {
-    const controller = new AbortController();
+    const controller = new globalThis.AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeout);
     try {
       const res = await fetch(url, { ...options, signal: controller.signal });
@@ -158,7 +157,7 @@ class Summarizer {
       try {
         return await res.json();
       } catch (e) {
-        throw new Error(`Failed to parse response: ${e.message}`);
+        throw new Error(`Failed to parse response: ${e.message}`, { cause: e });
       }
     } finally {
       clearTimeout(timer);

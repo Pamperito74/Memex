@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable */
 
 /**
  * Manifest Manager for Engram
@@ -185,7 +184,6 @@ class ManifestManager {
    * Get changed files since last manifest
    */
   async getChangedFiles() {
-    const oldManifest = this.load();
     await this.generate();
     const changes = this.detectChanges();
 
@@ -269,7 +267,7 @@ if (require.main === module) {
           console.log(`   • Time: ${manager.manifest.generation_time_ms}ms`);
           break;
 
-        case 'check':
+        case 'check': {
           console.log('🔍 Checking for changes...');
           const changes = await manager.getChangedFiles();
 
@@ -295,14 +293,16 @@ if (require.main === module) {
 
           manager.save();
           break;
+        }
 
-        case 'needs-update':
+        case 'needs-update': {
           const needsUpdate = manager.needsIndexUpdate();
           console.log(needsUpdate ? 'true' : 'false');
           process.exit(needsUpdate ? 0 : 1);
           break;
+        }
 
-        case 'stats':
+        case 'stats': {
           await manager.generate();
           const stats = manager.getStatsComparison();
           console.log('📊 Manifest Stats:');
@@ -311,6 +311,7 @@ if (require.main === module) {
           console.log(`   • Projects: ${stats.projects_diff > 0 ? '+' : ''}${stats.projects_diff}`);
           console.log(`   • Sessions: ${stats.sessions_diff > 0 ? '+' : ''}${stats.sessions_diff}`);
           break;
+        }
 
         default:
           console.log('Manifest Manager - Incremental update tracking');

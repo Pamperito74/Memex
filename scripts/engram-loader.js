@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable */
 
 /**
  * Engram Loader v2.0
@@ -27,7 +26,7 @@ class Engram {
     this.index = null;
     this.currentProject = null;
     this.cache = {
-      hot: new Map(),     // Last 10 items, in memory
+      hot: new Map(),     // Last 10 items, LRU-evicted
       warm: new Map(),    // Last 100 items, quick access
     };
     // Persistent cache for instant cold starts (gracefully degrade if unavailable)
@@ -37,7 +36,8 @@ class Engram {
         ttl: 60 * 60 * 1000 // 60 minutes
       });
     } catch (e) {
-      console.warn('⚠️  Persistent cache disabled:', e.message);
+      const cachePath = path.join(ENGRAM_PATH, '.cache', 'engram.db');
+      console.warn(`⚠️  Persistent cache disabled: ${e.message}. Remove ${cachePath} and restart to rebuild.`);
       this.persistentCache = {
         get: () => null,
         set: () => {},
@@ -62,7 +62,7 @@ class Engram {
   needsReload() {
     try {
       return this.manifestManager.needsIndexUpdate();
-    } catch (e) {
+    } catch {
       // If manifest doesn't exist or error, assume needs reload
       return true;
     }
@@ -176,7 +176,8 @@ class Engram {
 
       // Extract project name from git URL
       // Example: git@github.com:org/repo.git → repo
-      const match = gitRemote.match(/[:/]([^/]+)\.git$/);
+      // Example: https://github.com/org/repo → repo
+      const match = gitRemote.match(/[:/]([^/]+?)(?:\.git)?$/);
       if (match) {
         const projectName = match[1];
         if (this.index.p[projectName]) {
@@ -184,7 +185,7 @@ class Engram {
           return { method: 'git', project: projectName };
         }
       }
-    } catch (e) {
+    } catch {
       // Not a git repo or no remote, continue
     }
 
@@ -199,7 +200,7 @@ class Engram {
           return { method: 'package.json', project: projectName };
         }
       }
-    } catch (e) {
+    } catch {
       // Continue
     }
 
@@ -290,11 +291,6 @@ class Engram {
       return null;
     }
 
-    // Check cache first
-    if (this.cache.hot.has(filePath)) {
-      return this.cache.hot.get(filePath);
-    }
-
     const ext = path.extname(fullPath);
     let content;
 
@@ -305,13 +301,14 @@ class Engram {
       content = fs.readFileSync(fullPath, 'utf8');
     }
 
-    // Cache it
+    // LRU cache: delete-then-set to move to end (most recently used)
+    this.cache.hot.delete(filePath);
     this.cache.hot.set(filePath, content);
 
-    // Limit hot cache size
+    // Evict least recently used (first entry) if over capacity
     if (this.cache.hot.size > 10) {
-      const firstKey = this.cache.hot.keys().next().value;
-      this.cache.hot.delete(firstKey);
+      const lruKey = this.cache.hot.keys().next().value;
+      this.cache.hot.delete(lruKey);
     }
 
     return content;
@@ -488,9 +485,12 @@ class Engram {
       return { ...cached, from_cache: true };
     }
 
-    // Check hot cache
+    // Check hot cache (LRU reorder on hit)
     if (this.cache.hot.has(cacheKey)) {
-      return { ...this.cache.hot.get(cacheKey), from_cache: true };
+      const val = this.cache.hot.get(cacheKey);
+      this.cache.hot.delete(cacheKey);
+      this.cache.hot.set(cacheKey, val);
+      return { ...val, from_cache: true };
     }
 
     // Load from file
@@ -526,14 +526,15 @@ class Engram {
     const details = readJSON(detailsPath);
     if (!details) return null;
 
-    // Cache it
+    // LRU cache: delete-then-set to move to end (most recently used)
+    this.cache.hot.delete(cacheKey);
     this.cache.hot.set(cacheKey, details);
     this.persistentCache.set(cacheKey, details);
 
-    // Limit hot cache size
+    // Evict least recently used (first entry) if over capacity
     if (this.cache.hot.size > 10) {
-      const firstKey = this.cache.hot.keys().next().value;
-      this.cache.hot.delete(firstKey);
+      const lruKey = this.cache.hot.keys().next().value;
+      this.cache.hot.delete(lruKey);
     }
 
     return { ...details, from_cache: false };
@@ -711,34 +712,38 @@ if (require.main === module) {
         return;
       }
 
-      case 'list':
+      case 'list': {
         engram.loadIndex();
         const projects = engram.listProjects();
         console.log(JSON.stringify(projects, null, 2));
         break;
+      }
 
-      case 'quick':
+      case 'quick': {
         const question = process.argv.slice(3).join(' ');
         engram.loadIndex();
         engram.detectProject();
         const answer = engram.quickAnswer(question);
         console.log(JSON.stringify(answer, null, 2));
         break;
+      }
 
-      case 'content':
+      case 'content': {
         const filePath = process.argv[3];
         engram.loadIndex();
         const content = engram.loadContent(filePath);
         console.log(JSON.stringify(content, null, 2));
         break;
+      }
 
-      case 'expand':
+      case 'expand': {
         // Expand abbreviated keys to full names
         const context = process.argv[3] || 'root';
         engram.loadIndex();
         const legend = engram.index._legend[context];
         console.log(JSON.stringify(legend, null, 2));
         break;
+      }
 
       case 'status': {
         (async () => {
@@ -807,24 +812,22 @@ if (require.main === module) {
 
           // Cache stats
           let cacheStats = { total_entries: 0, database_size_kb: 0 };
-          try { cacheStats = engram.persistentCache.getStats(); } catch (e) { /* no cache */ }
+          try { cacheStats = engram.persistentCache.getStats(); } catch { /* no cache */ }
 
           // Bloom filter stats
           let bloomStats = null;
-          try { if (engram.bloomFilter) bloomStats = engram.bloomFilter.getStats(); } catch (e) { /* no bloom */ }
+          try { if (engram.bloomFilter) bloomStats = engram.bloomFilter.getStats(); } catch { /* no bloom */ }
 
           // Vector search stats
           let vectorStats = { total_embeddings: 0, file_size_kb: 0 };
-          try { vectorStats = engram.vectorSearch.getStats(); } catch (e) { /* no vectors */ }
+          try { vectorStats = engram.vectorSearch.getStats(); } catch { /* no vectors */ }
 
           // Metrics
-          let metrics = null;
+          let metrics;
           try {
             const { readMetricsSync } = require('./metrics');
             metrics = readMetricsSync();
-          } catch (e) {
-            metrics = null;
-          }
+          } catch { /* file not found */ }
 
           // Per-project session counts
           const projectStats = engram.listProjects().map(p => `    ${p.name}: ${p.session_count} sessions (last: ${p.last_updated || 'unknown'})`);

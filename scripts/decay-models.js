@@ -66,7 +66,7 @@ module.exports = {
    * contextual: returns 0 if session is no longer active.
    * context.session_active: boolean (default true if not provided)
    */
-  contextual(assertion, now = new Date(), context = {}) {
+  contextual(assertion, context = {}) {
     const sessionActive = context.session_active !== undefined ? context.session_active : true;
     if (!sessionActive) return 0;
     return assertion.confidence;

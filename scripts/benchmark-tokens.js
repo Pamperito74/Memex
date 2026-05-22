@@ -44,7 +44,7 @@ try {
   // gpt-tokenizer exports encode() for cl100k_base by default
   const gptTokenizer = require('gpt-tokenizer');
   tokenizer = gptTokenizer;
-} catch (_) {
+} catch {
   // Not installed — use byte estimator (logged below)
 }
 

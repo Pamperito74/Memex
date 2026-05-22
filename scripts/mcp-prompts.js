@@ -1,4 +1,3 @@
-/* eslint-disable */
 const PROMPTS = [
   {
     name: 'summarize_today',
@@ -74,23 +73,23 @@ function renderPrompt(name, args = {}) {
   const weekEnding = typeof args.week_ending === 'string' ? args.week_ending : '';
   const month = typeof args.month === 'string' ? args.month : '';
 
-  let text = '';
+  let text;
 
   switch (name) {
     case 'summarize_today':
-      text = `Summarize everything I worked on today${project ? ` for project \"${project}\"` : ''}. Use Engram tools (recent_sessions, search_sessions, get_session) and produce:\n- Summary\n- Key decisions\n- Open questions\n- Next steps`;
+      text = `Summarize everything I worked on today${project ? ` for project "${project}"` : ''}. Use Engram tools (recent_sessions, search_sessions, get_session) and produce:\n- Summary\n- Key decisions\n- Open questions\n- Next steps`;
       break;
     case 'project_onboarding':
-      text = `Give me full context for starting work on project \"${project}\". Use get_bundle, recent_sessions, search_sessions, and get_session. Include:\n- Project summary\n- Tech stack\n- Recent sessions and outcomes\n- Key conventions and decisions\n- Risks or open issues`;
+      text = `Give me full context for starting work on project "${project}". Use get_bundle, recent_sessions, search_sessions, and get_session. Include:\n- Project summary\n- Tech stack\n- Recent sessions and outcomes\n- Key conventions and decisions\n- Risks or open issues`;
       break;
     case 'weekly_report':
-      text = `Generate a weekly report for project \"${project}\"${weekEnding ? ` (week ending ${weekEnding})` : ''}. Use recent_sessions and search_sessions, then fetch details with get_session. Output:\n- Highlights\n- Decisions\n- Risks\n- Next week priorities`;
+      text = `Generate a weekly report for project "${project}"${weekEnding ? ` (week ending ${weekEnding})` : ''}. Use recent_sessions and search_sessions, then fetch details with get_session. Output:\n- Highlights\n- Decisions\n- Risks\n- Next week priorities`;
       break;
     case 'decision_log':
-      text = `List architectural decisions for project \"${project}\"${month ? ` in ${month}` : ''}. Use search_sessions with decision-related keywords and fetch details with get_session. Output as a bullet list with session id and rationale.`;
+      text = `List architectural decisions for project "${project}"${month ? ` in ${month}` : ''}. Use search_sessions with decision-related keywords and fetch details with get_session. Output as a bullet list with session id and rationale.`;
       break;
     default:
-      text = `Prompt \"${name}\" requested.`;
+      text = `Prompt "${name}" requested.`;
   }
 
   return {

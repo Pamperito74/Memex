@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable */
 
 /**
  * MCP Tool Implementations
@@ -76,7 +75,6 @@ function getEngramLoader() {
 
 async function neuralSearch(query, limit = 10, useDecay = true) {
   try {
-    const startedAt = Date.now();
     const vs = await getVectorSearch();
 
     const results = await vs.search(query, {
@@ -315,7 +313,7 @@ function searchSessions(query, project = null, limit = 10) {
   const engram = getEngramLoader();
 
   for (const projectDirName of projectDirs) {
-    let sessions = [];
+    let sessions;
     try {
       engram.loadIndex();
       sessions = engram.listSessions(projectDirName) || [];
@@ -529,8 +527,8 @@ function getGraphSummary() {
 function ledgerIngest(params) {
   try {
     const ledger = require('./ledger.js');
-    const id = ledger.ingest(params);
-    return { ok: true, id };
+    const result = ledger.ingest(params);
+    return { ok: true, id: result.id, action: result.action, negations: result.negations };
   } catch (e) {
     return { error: `ledger ingest failed: ${e.message}` };
   }

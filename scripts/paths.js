@@ -73,35 +73,23 @@ function listProjectDirectories(engramPath) {
 }
 
 function resolveProjectDirName(engramPath, projectName) {
-  const sanitized = String(projectName || '').replace(/[^a-zA-Z0-9._-]/g, '');
   const slug = normalizeProjectSlug(projectName);
+  if (!slug) return '';
   const projectsDir = listProjectDirectories(engramPath);
 
-  // Prefer an existing exact directory name first.
-  if (sanitized && projectsDir.includes(sanitized)) {
-    return sanitized;
-  }
-  if (slug && projectsDir.includes(slug)) {
+  // Exact slug match first.
+  if (projectsDir.includes(slug)) {
     return slug;
   }
 
-  const normalizedCandidates = new Set(
-    [sanitized, slug]
-      .filter(Boolean)
-      .map((value) => value.toLowerCase())
-  );
-
-  // Fall back to legacy directory names that normalize to the same slug.
+  // Fall back to any directory that normalizes to the same slug (legacy compat).
   for (const dirName of projectsDir) {
-    if (slug && normalizeProjectSlug(dirName) === slug) {
-      return dirName;
-    }
-    if (normalizedCandidates.has(dirName.toLowerCase())) {
+    if (normalizeProjectSlug(dirName) === slug) {
       return dirName;
     }
   }
 
-  return slug || sanitized || '';
+  return slug;
 }
 
 module.exports = {

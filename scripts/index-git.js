@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable */
 
 /**
  * Git-Native Indexing for Engram
@@ -22,7 +21,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawnSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const { encode: msgpackEncode, decode: msgpackDecode } = require('@msgpack/msgpack');
 const { resolveEngramPath, resolveReposRoot } = require('./paths');
 const { readJSON } = require('./safe-json');
@@ -35,7 +34,7 @@ function buildProjectMap() {
   if (process.env.ENGRAM_PROJECTS_JSON) {
     try {
       return JSON.parse(process.env.ENGRAM_PROJECTS_JSON);
-    } catch (e) {
+    } catch {
       console.warn('⚠️  Invalid ENGRAM_PROJECTS_JSON, falling back to discovery');
     }
   }
@@ -128,7 +127,7 @@ class GitIndexer {
           if (filesResult.status === 0) {
             files = filesResult.stdout.split('\n').filter(f => f.trim());
           }
-        } catch (e) {
+        } catch {
           // Skip if can't get files
         }
 
@@ -350,8 +349,8 @@ class GitIndexer {
       // Filter by project if specified
       if (project && data.p !== project) continue;
 
-      // Calculate cosine similarity
-      const similarity = this.cosineSimilarity(queryEmbedding, Array.from(data.e));
+      // Calculate cosine similarity (accepts Array or Float32Array directly)
+      const similarity = this.cosineSimilarity(queryEmbedding, data.e);
 
       if (similarity >= minSimilarity) {
         results.push({
@@ -433,7 +432,7 @@ const indexer = new GitIndexer();
 (async () => {
   try {
     switch (command) {
-      case 'build':
+      case 'build': {
         const projectArg = process.argv.indexOf('--project');
         const sinceArg = process.argv.indexOf('--since');
 
@@ -447,8 +446,9 @@ const indexer = new GitIndexer();
 
         await indexer.build(buildOptions);
         break;
+      }
 
-      case 'query':
+      case 'query': {
         const queryText = process.argv.slice(3).join(' ');
         if (!queryText) {
           console.error('Usage: index-git.js query <text>');
@@ -475,8 +475,9 @@ const indexer = new GitIndexer();
           }
         }
         break;
+      }
 
-      case 'stats':
+      case 'stats': {
         const stats = indexer.getStats();
         if (stats.error) {
           console.error(stats.error);
@@ -499,6 +500,7 @@ const indexer = new GitIndexer();
           console.log(`  ${type}: ${count}`);
         }
         break;
+      }
 
       default:
         console.log('Git-Native Indexing for Engram\n');

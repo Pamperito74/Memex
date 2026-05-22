@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable */
 
 /**
  * Lazy Loader for Engram (#22)
@@ -256,7 +255,7 @@ if (require.main === module) {
           await lazyLoader.revertToFullFormat();
           break;
 
-        case 'stats':
+        case 'stats': {
           const stats = lazyLoader.getStats();
           console.log('📊 Lazy Loading Stats:');
           console.log(`   • Total sessions: ${stats.total_sessions}`);
@@ -266,8 +265,9 @@ if (require.main === module) {
           console.log(`   • Avg full: ${stats.avg_session_full_bytes} bytes/session`);
           console.log(`   • Reduction: ${Math.round((1 - stats.avg_session_index_bytes/stats.avg_session_full_bytes) * 100)}%`);
           break;
+        }
 
-        case 'load':
+        case 'load': {
           const project = process.argv[3];
           const sessionId = process.argv[4];
           if (!project || !sessionId) {
@@ -282,6 +282,7 @@ if (require.main === module) {
             process.exit(1);
           }
           break;
+        }
 
         default:
           console.log('Lazy Loader - Reduce index size by 90% with on-demand loading');

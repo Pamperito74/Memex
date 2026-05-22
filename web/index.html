@@ -5,231 +5,325 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Engram — Neural Memory</title>
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231b1f23'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='%232da44e'%3EE%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2318181b'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' font-family='Inter,sans-serif' font-weight='700' fill='%2310b981'%3EE%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- SVG Icons (hidden sprite) -->
+  <svg style="display:none">
+    <symbol id="icon-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+    </symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </symbol>
+    <symbol id="icon-graph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><path d="M12 9v3l2 2M15 7l2-2M9 17l-2 2"/>
+    </symbol>
+    <symbol id="icon-sessions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+    </symbol>
+    <symbol id="icon-assertions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+    </symbol>
+    <symbol id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </symbol>
+    <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </symbol>
+    <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+    </symbol>
+    <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </symbol>
+    <symbol id="icon-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+    </symbol>
+    <symbol id="icon-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+    </symbol>
+    <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </symbol>
+  </svg>
+
   <div id="app">
-    <!-- Header -->
-    <header>
-      <div class="logo">
-        <span class="logo-icon">⬡</span>
-        <span class="logo-text">Engram</span>
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-inner">
+        <div class="sidebar-header">
+          <div class="logo">
+            <svg class="logo-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10l10 5 10-5V7l-10-5zM12 4.5L18.5 8 12 11.5 5.5 8 12 4.5zM4.5 11.5l6.5 3.25v6L4.5 17.5v-6zm15 0v6l-6.5 3.25v-6l6.5-3.25z"/></svg>
+            <span class="logo-text">Engram</span>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Main navigation">
+          <button class="nav-btn active" data-view="dashboard" aria-label="Dashboard" aria-pressed="true">
+            <svg><use href="#icon-dashboard"/></svg>
+            <span class="nav-label">Dashboard</span>
+          </button>
+          <button class="nav-btn" data-view="search" aria-label="Search" aria-pressed="false">
+            <svg><use href="#icon-search"/></svg>
+            <span class="nav-label">Search</span>
+          </button>
+          <button class="nav-btn" data-view="graph" aria-label="Graph" aria-pressed="false">
+            <svg><use href="#icon-graph"/></svg>
+            <span class="nav-label">Graph</span>
+          </button>
+          <button class="nav-btn" data-view="sessions" aria-label="Sessions" aria-pressed="false">
+            <svg><use href="#icon-sessions"/></svg>
+            <span class="nav-label">Sessions</span>
+          </button>
+          <button class="nav-btn" data-view="assertions" aria-label="Assertions" aria-pressed="false">
+            <svg><use href="#icon-assertions"/></svg>
+            <span class="nav-label">Assertions</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-section-title"><span class="nav-label">Projects</span></div>
+          <div id="sidebar-projects" class="sidebar-projects">
+            <div class="skeleton skeleton-row"></div>
+            <div class="skeleton skeleton-row" style="width:75%"></div>
+          </div>
+        </div>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-stat">
+            <span id="sidebar-sessions">-</span>
+            <span class="nav-label"> sessions</span>
+          </div>
+          <button id="theme-toggle" class="sidebar-theme-btn" aria-label="Toggle theme" title="Toggle theme">
+            <svg><use href="#icon-moon"/></svg>
+          </button>
+        </div>
       </div>
-      <nav id="main-nav" aria-label="Main navigation">
-        <button class="nav-btn active" data-view="dashboard" aria-label="Switch to Dashboard view" aria-pressed="true">Dashboard</button>
-        <button class="nav-btn" data-view="search" aria-label="Switch to Search view" aria-pressed="false">Search</button>
-        <button class="nav-btn" data-view="graph" aria-label="Switch to Graph view" aria-pressed="false">Graph</button>
-        <button class="nav-btn" data-view="sessions" aria-label="Switch to Sessions view" aria-pressed="false">Sessions</button>
-        <button class="nav-btn" data-view="assertions" aria-label="Switch to Assertions view" aria-pressed="false">Assertions</button>
-      </nav>
-      <div class="header-right">
-        <div class="stats-mini" id="stats-mini">
-          <span id="total-sessions">-</span> sessions
-        </div>
-        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle theme">🌙</button>
-      </div>
-    </header>
+    </aside>
 
-    <!-- Main Content -->
-    <main role="main">
-      <!-- Dashboard View -->
-      <section id="view-dashboard" class="view active">
-        <div class="dashboard-grid">
-          <div class="card stats-card">
-            <h3>Overview</h3>
-            <div class="stats-grid" id="stats-overview">
-              <div class="stat">
-                <span class="stat-value" id="stat-sessions">-</span>
-                <span class="stat-label">Sessions</span>
-              </div>
-              <div class="stat">
-                <span class="stat-value" id="stat-projects">-</span>
-                <span class="stat-label">Projects</span>
-              </div>
-              <div class="stat">
-                <span class="stat-value" id="stat-topics">-</span>
-                <span class="stat-label">Topics</span>
+    <div class="main-area">
+      <header class="topbar">
+        <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle navigation">
+          <svg><use href="#icon-menu"/></svg>
+        </button>
+        <div class="topbar-title" id="view-title">Dashboard</div>
+      </header>
+
+      <main role="main">
+        <!-- Dashboard View -->
+        <section id="view-dashboard" class="view active">
+          <div class="dashboard-grid">
+            <div class="card stats-card">
+              <h3>Overview</h3>
+              <div class="stats-grid" id="stats-overview">
+                <div class="stat">
+                  <span class="stat-value" id="stat-sessions">-</span>
+                  <span class="stat-label">Sessions</span>
+                </div>
+                <div class="stat">
+                  <span class="stat-value" id="stat-projects">-</span>
+                  <span class="stat-label">Projects</span>
+                </div>
+                <div class="stat">
+                  <span class="stat-value" id="stat-topics">-</span>
+                  <span class="stat-label">Topics</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="card">
-            <h3>AgentBridge</h3>
-            <div id="agentbridge-status" class="bridge-status">
-              <div class="loading">Loading...</div>
+            <div class="card">
+              <h3>AgentBridge</h3>
+              <div id="agentbridge-status" class="bridge-status">
+                <div class="skeleton skeleton-card"></div>
+              </div>
             </div>
-          </div>
 
-          <div class="card recent-card">
-            <h3>Recent Sessions</h3>
-            <div id="recent-sessions" class="sessions-list">
-              <div class="loading">Loading...</div>
+            <div class="card recent-card">
+              <h3>Recent Sessions</h3>
+              <div id="recent-sessions" class="sessions-list">
+                <div class="skeleton skeleton-row"></div>
+                <div class="skeleton skeleton-row" style="width:80%"></div>
+                <div class="skeleton skeleton-row" style="width:70%"></div>
+              </div>
             </div>
-          </div>
 
-          <div class="card">
-            <h3>Projects</h3>
-            <div id="projects-list" class="projects-list">
-              <div class="loading">Loading...</div>
+            <div class="card">
+              <h3>Projects</h3>
+              <div id="projects-list" class="projects-list">
+                <div class="skeleton skeleton-row"></div>
+                <div class="skeleton skeleton-row" style="width:60%"></div>
+              </div>
             </div>
-          </div>
 
-          <div class="card">
-            <h3>Top Topics</h3>
-            <div id="topics-cloud" class="topics-cloud">
-              <div class="loading">Loading...</div>
+            <div class="card">
+              <h3>Top Topics</h3>
+              <div id="topics-cloud" class="topics-cloud">
+                <div class="skeleton" style="width:60px;height:24px"></div>
+                <div class="skeleton" style="width:80px;height:24px"></div>
+                <div class="skeleton" style="width:50px;height:24px"></div>
+                <div class="skeleton" style="width:90px;height:24px"></div>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Search View -->
-      <section id="view-search" class="view">
-        <div class="search-container">
-          <div class="search-box">
-            <input type="text" id="search-input" placeholder="Search sessions by meaning..." autocomplete="off">
-            <div class="search-options">
-              <label>
-                <input type="checkbox" id="semantic-toggle" checked>
-                Semantic search
-              </label>
-              <label>
-                <input type="checkbox" id="decay-toggle" checked>
-                Time decay
-              </label>
+        <!-- Search View -->
+        <section id="view-search" class="view">
+          <div class="search-container">
+            <div class="search-box">
+              <input type="text" id="search-input" placeholder="Search sessions by meaning..." autocomplete="off">
+              <div class="search-options">
+                <label>
+                  <input type="checkbox" id="semantic-toggle" checked>
+                  Semantic search
+                </label>
+                <label>
+                  <input type="checkbox" id="decay-toggle" checked>
+                  Time decay
+                </label>
+              </div>
+            </div>
+            <div id="search-results" class="search-results" aria-live="polite">
+              <div class="search-hint">
+                Type to search across all sessions and projects
+              </div>
             </div>
           </div>
-          <div id="search-results" class="search-results" aria-live="polite">
-            <div class="search-hint">
-              Type to search across all sessions and projects
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Graph View -->
-      <section id="view-graph" class="view">
-        <div class="graph-toolbar">
-          <div class="graph-type-toggle">
-            <button class="graph-type-btn active" data-type="concepts">Concepts</button>
-            <button class="graph-type-btn" data-type="projects">Projects</button>
+        <!-- Graph View -->
+        <section id="view-graph" class="view">
+          <div class="graph-toolbar">
+            <div class="graph-type-toggle">
+              <button class="graph-type-btn active" data-type="concepts">Concepts</button>
+              <button class="graph-type-btn" data-type="projects">Projects</button>
+            </div>
+            <div class="graph-search">
+              <input type="text" id="graph-search" placeholder="Filter...">
+            </div>
           </div>
-          <div class="graph-search">
-            <input type="text" id="graph-search" placeholder="Filter...">
+          <div class="graph-container">
+            <div id="graph-canvas">
+              <div class="empty-state">
+                <svg><use href="#icon-graph"/></svg>
+                <p>Loading graph...</p>
+              </div>
+            </div>
+            <div class="graph-legend">
+              <span class="legend-dot hot"></span> Hot
+              <span class="legend-dot warm"></span> Warm
+              <span class="legend-dot normal"></span> Normal
+              <span class="legend-dot cold"></span> Cold
+            </div>
           </div>
-        </div>
-        <div class="graph-container">
-          <div id="graph-canvas"></div>
-          <div class="graph-legend">
-            <span class="legend-dot hot"></span> Hot
-            <span class="legend-dot warm"></span> Warm
-            <span class="legend-dot normal"></span> Normal
-            <span class="legend-dot cold"></span> Cold
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Session Detail View -->
-      <section id="view-session" class="view">
-        <div id="session-detail">
-          <div class="session-detail-header">
-            <button id="session-back" class="back-btn" aria-label="Back to sessions">&larr; Back</button>
-            <span class="session-detail-project" id="session-detail-project"></span>
-            <span class="session-detail-date" id="session-detail-date"></span>
+        <!-- Session Detail View -->
+        <section id="view-session" class="view">
+          <div id="session-detail">
+            <div class="session-detail-header">
+              <button id="session-back" class="back-btn" aria-label="Back to sessions">
+                <svg><use href="#icon-arrow-left"/></svg>
+                Back
+              </button>
+              <span class="session-detail-project" id="session-detail-project"></span>
+              <span class="session-detail-date" id="session-detail-date"></span>
+            </div>
+            <div class="session-detail-body">
+              <div class="session-detail-section">
+                <h3>Summary</h3>
+                <p id="session-detail-summary" class="session-detail-text"></p>
+              </div>
+              <div class="session-detail-section">
+                <h3>Content</h3>
+                <pre id="session-detail-content" class="session-detail-code"></pre>
+              </div>
+              <div class="session-detail-section">
+                <h3>Topics</h3>
+                <div id="session-detail-topics" class="session-detail-topics"></div>
+              </div>
+              <div class="session-detail-section">
+                <h3>Metadata</h3>
+                <div id="session-detail-meta" class="session-detail-meta"></div>
+              </div>
+            </div>
           </div>
-          <div class="session-detail-body">
-            <div class="session-detail-section">
-              <h3>Summary</h3>
-              <p id="session-detail-summary" class="session-detail-text"></p>
-            </div>
-            <div class="session-detail-section">
-              <h3>Content</h3>
-              <pre id="session-detail-content" class="session-detail-code"></pre>
-            </div>
-            <div class="session-detail-section">
-              <h3>Topics</h3>
-              <div id="session-detail-topics" class="session-detail-topics"></div>
-            </div>
-            <div class="session-detail-section">
-              <h3>Metadata</h3>
-              <div id="session-detail-meta" class="session-detail-meta"></div>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Assertions View -->
-      <section id="view-assertions" class="view">
-        <div class="assertions-filter">
-          <input type="text" id="assertions-search" placeholder="Filter assertions...">
-          <select id="assertions-status">
-            <option value="">All</option>
-            <option value="tentative">tentative</option>
-            <option value="established">established</option>
-            <option value="fossilized">fossilized</option>
-            <option value="quarantined">quarantined</option>
-          </select>
-        </div>
-        <div id="assertions-list" class="assertions-list" aria-live="polite"></div>
-      </section>
-
-      <!-- Sessions View -->
-      <section id="view-sessions" class="view">
-        <div class="sessions-container">
-          <div class="sessions-sidebar">
-            <h3>Projects</h3>
-            <div id="project-tabs" class="project-tabs">
-              <div class="loading">Loading...</div>
-            </div>
+        <!-- Assertions View -->
+        <section id="view-assertions" class="view">
+          <div class="assertions-filter">
+            <input type="text" id="assertions-search" placeholder="Filter assertions...">
+            <select id="assertions-status">
+              <option value="">All</option>
+              <option value="tentative">tentative</option>
+              <option value="established">established</option>
+              <option value="fossilized">fossilized</option>
+              <option value="quarantined">quarantined</option>
+            </select>
           </div>
+          <div id="assertions-list" class="assertions-list" aria-live="polite"></div>
+        </section>
+
+        <!-- Sessions View -->
+        <section id="view-sessions" class="view">
           <div class="sessions-main">
             <div id="sessions-list-full" class="sessions-list-full">
-              <div class="empty-state">Select a project to view sessions</div>
+              <div class="empty-state">
+                <svg><use href="#icon-sessions"/></svg>
+                <p>Select a project from the sidebar</p>
+              </div>
             </div>
           </div>
+        </section>
+      </main>
+
+      <footer class="main-footer">
+        <div class="footer-content">
+          <span>&copy; TinyDarkForge</span>
+          <span class="footer-version" id="footer-version"></span>
+          <div class="footer-links">
+            <a href="https://github.com/tinydarkforge/Engram" target="_blank" rel="noopener">GitHub</a>
+            <a href="mailto:hello@tinydarkforge.com">Support</a>
+          </div>
         </div>
-      </section>
-    </main>
-  </div>
-
-  <!-- Assertion Detail Panel -->
-  <aside id="assertion-detail" class="detail-panel" aria-label="Assertion detail" hidden>
-    <div class="detail-panel-header">
-      <h2 id="detail-claim">Claim</h2>
-      <button id="detail-close" aria-label="Close detail panel">&#x2715;</button>
+      </footer>
     </div>
-    <div class="detail-panel-body">
-      <div class="detail-meta" id="detail-meta"></div>
-      <section class="detail-section">
-        <h3>Outcome Timeline</h3>
-        <div id="detail-outcomes"></div>
-      </section>
-      <section class="detail-section">
-        <h3>Lineage</h3>
-        <div id="detail-lineage"></div>
-      </section>
-      <section class="detail-section">
-        <h3>Why was this picked?</h3>
-        <div id="detail-why"></div>
-      </section>
-      <section class="detail-section">
-        <h3>Feedback</h3>
-        <div id="detail-feedback"></div>
-      </section>
-    </div>
-  </aside>
 
-  <!-- Footer -->
-  <footer class="main-footer">
-    <div class="footer-content">
-      <p>&copy; 2025 TinyDarkForge. All rights reserved.</p>
-      <div class="footer-links">
-        <a href="https://github.com/tinydarkforge/Engram" target="_blank" rel="noopener">GitHub</a>
-        <a href="mailto:hello@tinydarkforge.com">Support</a>
+    <!-- Assertion Detail Panel -->
+    <aside id="assertion-detail" class="detail-panel" aria-label="Assertion detail" hidden>
+      <div class="detail-panel-header">
+        <h2 id="detail-claim">Claim</h2>
+        <button id="detail-close" aria-label="Close detail panel">
+          <svg><use href="#icon-x"/></svg>
+        </button>
       </div>
-    </div>
-  </footer>
+      <div class="detail-panel-body">
+        <div class="detail-meta" id="detail-meta"></div>
+        <section class="detail-section">
+          <h3>Outcome Timeline</h3>
+          <div id="detail-outcomes"></div>
+        </section>
+        <section class="detail-section">
+          <h3>Lineage</h3>
+          <div id="detail-lineage"></div>
+        </section>
+        <section class="detail-section">
+          <h3>Why was this picked?</h3>
+          <div id="detail-why"></div>
+        </section>
+        <section class="detail-section">
+          <h3>Feedback</h3>
+          <div id="detail-feedback"></div>
+        </section>
+      </div>
+    </aside>
+  </div>
 
   <script src="graph-shell.js"></script>
   <script src="app.js"></script>

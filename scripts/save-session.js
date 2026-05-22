@@ -304,7 +304,10 @@ class SessionSaver {
       const sessionsIndex = readJSON(sessionsIndexPath);
       if (sessionsIndex) {
         // v2.0 uses abbreviated keys: p=projects, sc=session_count, u=last_updated
-        if (index.p && index.p[this.currentProject]) {
+        if (index.p) {
+          if (!index.p[this.currentProject]) {
+            index.p[this.currentProject] = { sc: 0, u: '' };
+          }
           index.p[this.currentProject].sc = sessionsIndex.total_sessions;
           index.p[this.currentProject].u = new Date().toISOString().split('T')[0];
         }
@@ -408,13 +411,16 @@ if (require.main === module) {
 
   (async () => {
     try {
-      const saver = new SessionSaver();
+      const projectIdx = args.indexOf('--project');
+      const project = projectIdx > -1 && args[projectIdx + 1] ? args[projectIdx + 1] : undefined;
+      const saver = new SessionSaver(project ? { project } : {});
 
       if (args.includes('--interactive') || args.length === 0) {
         await saver.interactive();
       } else {
         const autoSummarize = args.includes('--auto-summarize');
         const topicsIndex = args.indexOf('--topics');
+        const projectIndex = args.indexOf('--project');
         const commit = args.includes('--commit');
         const push = args.includes('--push');
 

@@ -51,6 +51,7 @@
   </svg>
 
   <div id="app">
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-inner">
         <div class="sidebar-header">
@@ -193,14 +194,21 @@
             <div class="search-box">
               <input type="text" id="search-input" placeholder='Search sessions by meaning... (Press " / " to focus)' autocomplete="off">
               <div class="search-options">
-                <label>
-                  <input type="checkbox" id="semantic-toggle" checked>
-                  Semantic search
-                </label>
-                <label>
-                  <input type="checkbox" id="decay-toggle" checked>
-                  Time decay
-                </label>
+                <div class="search-scope">
+                  <select id="search-project" class="search-select">
+                    <option value="">All projects</option>
+                  </select>
+                </div>
+                <div class="search-toggles">
+                  <label>
+                    <input type="checkbox" id="semantic-toggle" checked>
+                    Semantic
+                  </label>
+                  <label>
+                    <input type="checkbox" id="decay-toggle" checked>
+                    Decay
+                  </label>
+                </div>
               </div>
             </div>
             <div id="search-results" class="search-results" aria-live="polite">

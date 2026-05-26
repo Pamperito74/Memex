@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const path = require('path');
+const os = require('os');
 const { execFileSync } = require('child_process');
 
 const { resolveEngramPath } = require('./paths');
@@ -7,9 +8,24 @@ const ENGRAM_PATH = process.env.ENGRAM_PATH || resolveEngramPath(__dirname);
 
 const CHECK_INTERVAL_MS = (parseInt(process.env.ENGRAM_CONSOLIDATE_INTERVAL) || 300) * 1000;
 const BATTERY_OK = process.env.ENGRAM_CONSOLIDATE_BATTERY_OK === 'true';
+const MAX_LOAD = parseFloat(process.env.ENGRAM_CONSOLIDATE_MAX_LOAD) || 2.0;
+const MIN_IDLE_MS = (parseInt(process.env.ENGRAM_CONSOLIDATE_MIN_IDLE) || 120) * 1000;
+
+let lastRunTime = 0;
 
 function log(msg) {
   console.log(`[consolidate] ${msg}`);
+}
+
+function isSystemIdle() {
+  const [load1] = os.loadavg();
+  const cpuCores = os.cpus().length;
+  const normalized = load1 / cpuCores;
+  if (normalized >= MAX_LOAD) {
+    log(`Skipping — system load ${normalized.toFixed(2)} exceeds threshold ${MAX_LOAD}`);
+    return false;
+  }
+  return true;
 }
 
 function isOnBattery() {
@@ -118,8 +134,16 @@ async function consolidate(tasks, options = {}) {
 
 function startWatcher(options = {}) {
   const { onUpdate } = options;
-  log(`Auto-consolidation active (interval: ${CHECK_INTERVAL_MS / 1000}s)`);
+  log(`Auto-consolidation active (interval: ${CHECK_INTERVAL_MS / 1000}s, max_load: ${MAX_LOAD}, min_idle: ${MIN_IDLE_MS / 1000}s)`);
   const timer = setInterval(async () => {
+    const now = Date.now();
+    if (now - lastRunTime < MIN_IDLE_MS) return;
+    if (!isSystemIdle()) return;
+    if (isOnBattery() && !BATTERY_OK) {
+      log('Skipping — on battery. Set ENGRAM_CONSOLIDATE_BATTERY_OK=true to override.');
+      return;
+    }
+    lastRunTime = now;
     try {
       await consolidate({
         bloom: true,

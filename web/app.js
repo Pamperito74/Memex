@@ -265,16 +265,32 @@ function initSearch() {
   const input = document.getElementById('search-input');
   const semanticToggle = document.getElementById('semantic-toggle');
   const decayToggle = document.getElementById('decay-toggle');
+  const projectSelect = document.getElementById('search-project');
 
-  input.addEventListener('input', () => {
+  // Populate project scope dropdown
+  async function loadProjectScope() {
+    try {
+      const stats = await api.get('/stats');
+      projectSelect.innerHTML = '<option value="">All projects</option>' +
+        (stats.projects || []).map(p =>
+          `<option value="${esc(p.name || p.project)}">${esc(p.name || p.project)}</option>`
+        ).join('');
+    } catch {}
+  }
+  loadProjectScope();
+
+  function triggerSearch() {
     clearTimeout(state.searchTimeout);
     state.searchTimeout = setTimeout(() => {
-      performSearch(input.value, semanticToggle.checked, decayToggle.checked);
+      performSearch(input.value, semanticToggle.checked, decayToggle.checked, projectSelect.value);
     }, 300);
-  });
+  }
+
+  input.addEventListener('input', triggerSearch);
+  projectSelect.addEventListener('change', triggerSearch);
 }
 
-async function performSearch(query, semantic, decay) {
+async function performSearch(query, semantic, decay, project) {
   const resultsContainer = document.getElementById('search-results');
 
   if (!query.trim()) {
@@ -290,10 +306,12 @@ async function performSearch(query, semantic, decay) {
     results = await api.post('/semantic-search', {
       query,
       limit: 20,
-      useDecay: decay
+      useDecay: decay,
+      project: project || undefined
     });
   } else {
-    results = await api.get(`/search?q=${encodeURIComponent(query)}&limit=20`);
+    const params = `q=${encodeURIComponent(query)}&limit=20${project ? `&project=${encodeURIComponent(project)}` : ''}`;
+    results = await api.get(`/search?${params}`);
   }
 
   if (!results.results || results.results.length === 0) {
@@ -700,11 +718,28 @@ function initSessionDetail() {
 
 function initSidebar() {
   var toggle = document.getElementById('sidebar-toggle');
+  var overlay = document.getElementById('sidebar-overlay');
   if (!toggle) return;
+
+  function openSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    sidebar.classList.add('open');
+    if (overlay) overlay.classList.add('visible');
+  }
+
+  function closeSidebar() {
+    var sidebar = document.getElementById('sidebar');
+    sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('visible');
+  }
 
   toggle.addEventListener('click', function () {
     var sidebar = document.getElementById('sidebar');
-    sidebar.classList.toggle('open');
+    if (sidebar.classList.contains('open')) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
   });
 
   document.addEventListener('click', function (e) {
@@ -713,6 +748,10 @@ function initSidebar() {
       closeSidebar();
     }
   });
+
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+  }
 }
 
 function closeSidebar() {

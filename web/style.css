@@ -751,6 +751,48 @@ main {
   font-weight: var(--font-weight-medium);
 }
 
+.search-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.search-scope {
+  flex: 0 0 auto;
+}
+
+.search-select {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-xs);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  max-width: 180px;
+}
+
+.search-select:hover {
+  border-color: var(--accent);
+}
+
+.search-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-ring);
+}
+
+.search-toggles {
+  display: flex;
+  gap: var(--space-3);
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
 .search-options input[type="checkbox"] {
   accent-color: var(--accent);
   width: 14px;

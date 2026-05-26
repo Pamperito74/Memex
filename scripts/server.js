@@ -241,6 +241,7 @@ app.get('/api/search', (req, res) => {
   try {
     const query = (req.query.q || '').slice(0, 500);
     const limit = clampLimit(req.query.limit, 20, 100);
+    const project = req.query.project ? decodeURIComponent(req.query.project) : '';
 
     if (!query.trim()) {
       return res.json({ query: '', results: [], total: 0 });
@@ -248,6 +249,9 @@ app.get('/api/search', (req, res) => {
 
     const results = engram.search(query);
     results.results = results.results.slice(0, limit);
+    if (project) {
+      results.results = results.results.filter(r => r.project === project);
+    }
 
     res.json(results);
       } catch {
@@ -269,11 +273,17 @@ app.post('/api/semantic-search', rateLimit(60_000, 30), async (req, res) => {
       return res.json({ query: '', results: [], total: 0 });
     }
 
+    const project = req.body.project || '';
+
     const results = await engram.semanticSearch(query, {
       limit,
       useDecay,
       minSimilarity: 0.15,
     });
+
+    if (project) {
+      results.results = results.results.filter(r => r.project === project);
+    }
 
     res.json(results);
       } catch {

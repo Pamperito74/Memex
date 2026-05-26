@@ -9,7 +9,11 @@
   <a href="https://www.npmjs.com/package/@tinydarkforge/engram"><img alt="npm" src="https://img.shields.io/npm/v/@tinydarkforge/engram?style=flat-square&labelColor=18181b&color=10b981"></a>
 </p>
 
-**Engram** is an autonomous memory and assertion ledger for AI coding agents. It persists engineering context across repositories, ranks facts by confidence and corroboration, and surfaces contradictions. Unlike simple RAG, Engram actively **learns** — running background consolidation to refine its knowledge and exposing a high-fidelity context to Claude Code over the Model Context Protocol (MCP).
+<p align="center">
+  <img src="web/engram-dashboard.png" alt="Engram Dashboard" width="720">
+</p>
+
+**Engram** is an autonomous memory and assertion ledger for AI coding agents. It persists engineering context across repositories, ranks facts by confidence and corroboration, surfaces contradictions, and exposes everything to Claude Code over MCP with real-time subscriptions. Unlike simple RAG, Engram actively **learns** — running background consolidation to refine its knowledge without user intervention.
 
 ---
 

@@ -70,8 +70,9 @@ class PersistentCache {
       CREATE INDEX IF NOT EXISTS idx_last_accessed ON cache(last_accessed_at)
     `);
 
-    // Cleanup expired entries on initialization
+    // Cleanup expired entries and trim to max entries on initialization
     this.cleanup();
+    this.trimToMax();
   }
 
   /**
@@ -156,8 +157,8 @@ class PersistentCache {
     // Encode value with msgpack
     const encoded = msgpackEncode(value);
 
-    // Preserve last_accessed_at on updates, set to now for new entries
-    const lastAccessedAt = existing ? existing.last_accessed_at : now;
+    // Update last_accessed_at on every write (proper LRU)
+    const lastAccessedAt = now;
 
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO cache (key, value, version, expires_at, created_at, updated_at, last_accessed_at)
@@ -192,6 +193,29 @@ class PersistentCache {
 
     if (result.changes > 0) {
       console.log(`🧹 Cleaned up ${result.changes} expired cache entries`);
+    }
+  }
+
+  /**
+   * Trim cache to max entries by evicting LRU entries
+   */
+  trimToMax() {
+    const countStmt = this.db.prepare('SELECT COUNT(*) as count FROM cache');
+    const { count } = countStmt.get();
+    if (count <= this.maxEntries) return;
+
+    const excess = count - this.maxEntries;
+    const stmt = this.db.prepare(`
+      DELETE FROM cache
+      WHERE key IN (
+        SELECT key FROM cache
+        ORDER BY last_accessed_at ASC
+        LIMIT ?
+      )
+    `);
+    const result = stmt.run(excess);
+    if (result.changes > 0) {
+      console.log(`🧹 Trimmed ${result.changes} LRU cache entries`);
     }
   }
 

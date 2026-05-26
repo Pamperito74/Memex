@@ -176,7 +176,10 @@ class Engram {
       // Extract project name from git URL
       // Example: git@github.com:org/repo.git → repo
       // Example: https://github.com/org/repo → repo
-      const match = gitRemote.match(/[:/]([^/]+?)(?:\.git)?$/);
+      // Example: https://github.com/org/repo/ → repo (trailing slash)
+      // Example: git@github.com:org/repo.git/ → repo (bare trailing slash)
+      const clean = gitRemote.replace(/\/+$/, '');
+      const match = clean.match(/[:/]([^/]+?)(?:\.git)?$/);
       if (match) {
         const projectName = match[1];
         if (this.index.p[projectName]) {

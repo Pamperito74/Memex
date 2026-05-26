@@ -18,6 +18,7 @@ const { readJSON } = require('./safe-json');
 const ENGRAM_PATH = resolveEngramPath(__dirname);
 const EMBEDDINGS_PATH = path.join(ENGRAM_PATH, '.cache', 'embeddings.json');
 const EMBEDDINGS_MSGPACK_PATH = path.join(ENGRAM_PATH, '.cache', 'embeddings.msgpack');
+const EMBEDDINGS_BINARY_DIR = path.join(ENGRAM_PATH, '.cache', 'embeddings');
 const DEFAULT_DUPLICATE_THRESHOLD = 0.85;
 const DEFAULT_DUPLICATE_LIMIT = 20;
 
@@ -164,8 +165,8 @@ class VectorSearch {
    * Returns value between -1 and 1 (higher = more similar)
    */
   cosineSimilarity(a, b) {
-    if (a.length !== b.length) {
-      throw new Error('Vectors must have same length');
+    if (!a || !b || a.length !== b.length) {
+      return 0;
     }
 
     let dotProduct = 0;
@@ -173,64 +174,183 @@ class VectorSearch {
     let magnitudeB = 0;
 
     for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      magnitudeA += a[i] * a[i];
-      magnitudeB += b[i] * b[i];
+      const valA = a[i];
+      const valB = b[i];
+      dotProduct += valA * valB;
+      magnitudeA += valA * valA;
+      magnitudeB += valB * valB;
     }
-
-    magnitudeA = Math.sqrt(magnitudeA);
-    magnitudeB = Math.sqrt(magnitudeB);
 
     if (magnitudeA === 0 || magnitudeB === 0) {
       return 0;
     }
 
-    return dotProduct / (magnitudeA * magnitudeB);
+    return dotProduct / (Math.sqrt(magnitudeA) * Math.sqrt(magnitudeB));
   }
 
   /**
-   * Load cached embeddings from disk (msgpack preferred, JSON fallback)
+   * Load cached embeddings from disk (Binary preferred, then msgpack, then JSON)
    */
   loadEmbeddings() {
-    // Try msgpack first (smaller, faster)
-    if (fs.existsSync(EMBEDDINGS_MSGPACK_PATH)) {
+    this.embeddings = { sessions: {}, version: '2.0.0' };
+
+    // 1. Try migration if legacy exists and binary doesn't
+    if (!fs.existsSync(EMBEDDINGS_BINARY_DIR) && (fs.existsSync(EMBEDDINGS_MSGPACK_PATH) || fs.existsSync(EMBEDDINGS_PATH))) {
+      this.migrateToBinary();
+    }
+
+    // 2. Load all project binary files
+    if (fs.existsSync(EMBEDDINGS_BINARY_DIR)) {
       try {
-        const buffer = fs.readFileSync(EMBEDDINGS_MSGPACK_PATH);
-        this.embeddings = msgpackDecode(buffer);
+        const files = fs.readdirSync(EMBEDDINGS_BINARY_DIR).filter(f => f.endsWith('.bin'));
+        for (const file of files) {
+          this.loadProjectBinary(file);
+        }
         return this.embeddings;
       } catch (e) {
-        console.warn('⚠️  Failed to load embeddings msgpack:', e.message);
+        console.warn('⚠️  Failed to load binary embeddings:', e.message);
       }
     }
-    // Legacy JSON fallback
-    if (fs.existsSync(EMBEDDINGS_PATH)) {
-      try {
-        this.embeddings = JSON.parse(fs.readFileSync(EMBEDDINGS_PATH, 'utf8'));
-        return this.embeddings;
-      } catch (e) {
-        console.warn('⚠️  Failed to load embeddings cache:', e.message);
-      }
-    }
-    this.embeddings = { sessions: {}, version: '1.0.0' };
-    if (!this.embeddings.sessions) {
-      this.embeddings.sessions = {};
-    }
+
     return this.embeddings;
   }
 
   /**
-   * Save embeddings to disk (msgpack format)
+   * Migrate legacy monolithic storage to per-project binary files
+   */
+  migrateToBinary() {
+    console.log('📦 Migrating embeddings to optimized binary format...');
+    let legacyData = null;
+
+    if (fs.existsSync(EMBEDDINGS_MSGPACK_PATH)) {
+      try {
+        legacyData = msgpackDecode(fs.readFileSync(EMBEDDINGS_MSGPACK_PATH));
+      } catch (e) { console.warn(e.message); }
+    } else if (fs.existsSync(EMBEDDINGS_PATH)) {
+      try {
+        legacyData = JSON.parse(fs.readFileSync(EMBEDDINGS_PATH, 'utf8'));
+      } catch (e) { console.warn(e.message); }
+    }
+
+    if (legacyData && legacyData.sessions) {
+      const byProject = {};
+      for (const [id, data] of Object.entries(legacyData.sessions)) {
+        const proj = data.project || 'unknown';
+        if (!byProject[proj]) byProject[proj] = {};
+        byProject[proj][id] = data;
+      }
+
+      for (const [proj, sessions] of Object.entries(byProject)) {
+        this.saveProjectBinary(proj, sessions);
+      }
+
+      // Keep legacy for safety but could rename/delete here
+      console.log(`✅ Migration complete. ${Object.keys(legacyData.sessions).length} sessions moved to binary.`);
+    }
+  }
+
+  /**
+   * Load a single project's binary embeddings
+   */
+  loadProjectBinary(filename) {
+    const filePath = path.join(EMBEDDINGS_BINARY_DIR, filename);
+    try {
+      const buffer = fs.readFileSync(filePath);
+      // Format: [Magic:4][Version:1][Dim:2][Count:4][Data...]
+      if (buffer.length < 11) return;
+
+      const magic = buffer.toString('utf8', 0, 4);
+      if (magic !== 'ENGR') return;
+
+      const dim = buffer.readUInt16LE(5);
+      const count = buffer.readUInt32LE(7);
+      
+      // Followed by JSON metadata blob length (4 bytes) and then metadata
+      const metaLen = buffer.readUInt32LE(11);
+      const meta = JSON.parse(buffer.toString('utf8', 15, 15 + metaLen));
+      
+      // Followed by raw Float32 data
+      const dataOffset = 15 + metaLen;
+      const floatData = new Float32Array(buffer.buffer, buffer.byteOffset + dataOffset, count * dim);
+
+      for (let i = 0; i < count; i++) {
+        const sessionMeta = meta[i];
+        const start = i * dim;
+        const end = start + dim;
+        const embedding = floatData.slice(start, end);
+        
+        this.embeddings.sessions[sessionMeta.id] = {
+          ...sessionMeta,
+          embedding
+        };
+      }
+    } catch (e) {
+      console.warn(`⚠️  Failed to load binary project ${filename}:`, e.message);
+    }
+  }
+
+  /**
+   * Save project embeddings to binary file
+   */
+  saveProjectBinary(project, sessions) {
+    if (!fs.existsSync(EMBEDDINGS_BINARY_DIR)) {
+      fs.mkdirSync(EMBEDDINGS_BINARY_DIR, { recursive: true });
+    }
+
+    const sessionEntries = Object.entries(sessions);
+    if (sessionEntries.length === 0) return;
+
+    const dim = 384;
+    const count = sessionEntries.length;
+    const meta = sessionEntries.map(([id, data]) => ({
+      id,
+      project: data.project,
+      text_preview: data.text_preview,
+      created_at: data.created_at
+    }));
+
+    const metaStr = JSON.stringify(meta);
+    const metaBuffer = Buffer.from(metaStr, 'utf8');
+    const floatData = new Float32Array(count * dim);
+
+    for (let i = 0; i < count; i++) {
+      const [id, data] = sessionEntries[i];
+      floatData.set(data.embedding, i * dim);
+    }
+
+    const header = Buffer.alloc(15);
+    header.write('ENGR', 0, 4); // Magic
+    header.writeUInt8(2, 4);    // Version
+    header.writeUInt16LE(dim, 5);
+    header.writeUInt32LE(count, 7);
+    header.writeUInt32LE(metaBuffer.length, 11);
+
+    const finalBuffer = Buffer.concat([
+      header,
+      metaBuffer,
+      Buffer.from(floatData.buffer, floatData.byteOffset, floatData.byteLength)
+    ]);
+
+    const safeProj = project.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    fs.writeFileSync(path.join(EMBEDDINGS_BINARY_DIR, `${safeProj}.bin`), finalBuffer);
+  }
+
+  /**
+   * Save embeddings to disk (Binary format)
    */
   saveEmbeddings() {
     if (!this.embeddings) return;
 
-    const cacheDir = path.dirname(EMBEDDINGS_PATH);
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
+    const byProject = {};
+    for (const [id, data] of Object.entries(this.embeddings.sessions)) {
+      const proj = data.project || 'unknown';
+      if (!byProject[proj]) byProject[proj] = {};
+      byProject[proj][id] = data;
     }
 
-    const buffer = msgpackEncode(this.embeddings);
-    fs.writeFileSync(EMBEDDINGS_MSGPACK_PATH, buffer);
+    for (const [proj, sessions] of Object.entries(byProject)) {
+      this.saveProjectBinary(proj, sessions);
+    }
   }
 
   /**
@@ -374,6 +494,7 @@ class VectorSearch {
    *
    * @param {string} query - Search query
    * @param {object} options - Search options
+   * @param {string} options.project - Optional project filter (lazy loads project)
    * @param {number} options.limit - Max results (default 10)
    * @param {number} options.minSimilarity - Min similarity threshold (default 0.2)
    * @param {boolean} options.useDecay - Apply time decay (default true)
@@ -384,6 +505,7 @@ class VectorSearch {
    */
   async search(query, options = {}) {
     const {
+      project = null,
       limit = 10,
       minSimilarity = 0.2,
       useDecay = true,
@@ -393,8 +515,13 @@ class VectorSearch {
       keywordWeight = 0.3
     } = options;
 
-    // Load embeddings if not already loaded
-    if (!this.embeddings) {
+    // Load embeddings
+    if (project) {
+      // Lazy load only the specific project
+      const safeProj = project.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      this.loadProjectBinary(`${safeProj}.bin`);
+    } else if (!this.embeddings || Object.keys(this.embeddings.sessions).length === 0) {
+      // Load everything as fallback
       this.loadEmbeddings();
     }
 
@@ -409,10 +536,13 @@ class VectorSearch {
     // Generate query embedding
     const queryEmbedding = await this.embed(query);
 
-    // Calculate similarity with all sessions
+    // Calculate similarity with filtered sessions
     const results = [];
+    const sessionsToSearch = project 
+      ? Object.entries(this.embeddings.sessions).filter(([_, s]) => s.project === project)
+      : Object.entries(this.embeddings.sessions);
 
-    for (const [sessionId, sessionData] of Object.entries(this.embeddings.sessions)) {
+    for (const [sessionId, sessionData] of sessionsToSearch) {
       if (!sessionData.embedding) continue;
 
       const semanticScore = this.cosineSimilarity(queryEmbedding, sessionData.embedding);

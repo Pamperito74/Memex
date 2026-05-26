@@ -322,17 +322,9 @@ class Engram {
     const lowerQuery = query.toLowerCase();
     const queryTerms = this.extractSearchTerms(query);
 
-    // #27: Bloom Filter pre-check for instant negative lookups
-    if (this.shouldSkipSearch(query, queryTerms)) {
-      // Definitely not in Engram, return immediately
-      return {
-        query,
-        results: [],
-        total: 0,
-        bloom_filter_skip: true,
-        message: `"${query}" definitely not found in Engram (bloom filter)`
-      };
-    }
+    // Bloom Filter hint for metadata (NOT a gate — false negatives hurt trust)
+    const bloomFilterHint = this.bloomFilter && this.bloomFilter.itemCount > 0
+      ? !this.mightExistInBloom(query, queryTerms) : null;
 
     // Search topics
     for (const [topic, data] of Object.entries(this.index.t)) {
@@ -390,7 +382,7 @@ class Engram {
       query,
       results,
       total: results.length,
-      bloom_filter_skip: false
+      bloom_filter_hint: bloomFilterHint,
     };
   }
 
@@ -402,18 +394,18 @@ class Engram {
       .filter(term => term.length > 2);
   }
 
-  shouldSkipSearch(query, queryTerms = this.extractSearchTerms(query)) {
-    if (!this.bloomFilter) return false;
+  mightExistInBloom(query, queryTerms) {
+    if (!this.bloomFilter || this.bloomFilter.itemCount === 0) return true;
 
     const normalizedQuery = String(query || '').trim().toLowerCase();
-    if (!normalizedQuery) return false;
+    if (!normalizedQuery) return true;
 
     if (queryTerms.length <= 1) {
       const candidate = queryTerms[0] || normalizedQuery;
-      return !this.bloomFilter.mightContain(candidate);
+      return this.bloomFilter.mightContain(candidate);
     }
 
-    return queryTerms.every(term => !this.bloomFilter.mightContain(term));
+    return queryTerms.some(term => this.bloomFilter.mightContain(term));
   }
 
   /**
@@ -832,9 +824,11 @@ if (require.main === module) {
 
           // Check for missing metadata files
           for (const [name, proj] of Object.entries(engram.index.p)) {
-            const mfPath = path.join(ENGRAM_PATH, proj.mf);
-            if (!fs.existsSync(mfPath)) {
-              issues.push(`Missing metadata: ${proj.mf} (project: ${name})`);
+            if (proj.mf) {
+              const mfPath = path.join(ENGRAM_PATH, proj.mf);
+              if (!fs.existsSync(mfPath)) {
+                issues.push(`Missing metadata: ${proj.mf} (project: ${name})`);
+              }
             }
           }
 

@@ -30,16 +30,16 @@ const BLOOM_FILTER_PATH = path.join(ENGRAM_PATH, '.cache', 'bloom-filter.json');
 
 class BloomFilter {
   constructor(expectedItems = 1000, falsePositiveRate = 0.01) {
-    this.expectedItems = expectedItems;
+    this.expectedItems = Math.max(100, expectedItems);
     this.falsePositiveRate = falsePositiveRate;
 
     // Calculate optimal bit array size and number of hash functions
     // m = -(n * ln(p)) / (ln(2)^2)
     // k = (m/n) * ln(2)
-    const n = expectedItems;
-    const p = falsePositiveRate;
+    const n = this.expectedItems;
+    const p = this.falsePositiveRate;
     this.size = Math.ceil(-(n * Math.log(p)) / (Math.log(2) ** 2));
-    this.numHashFunctions = Math.ceil((this.size / n) * Math.log(2));
+    this.numHashFunctions = Math.max(1, Math.ceil((this.size / n) * Math.log(2)));
 
     // Use bit array (represented as Uint8Array for efficiency)
     this.bits = new Uint8Array(Math.ceil(this.size / 8));
@@ -51,22 +51,14 @@ class BloomFilter {
    * Uses double hashing: h_i(x) = h1(x) + i * h2(x)
    */
   getHashes(str) {
-    var normalized = str.toLowerCase();
-    var full = crypto.createHash('blake2b512').update(normalized).digest();
-    var hash1 = full.subarray(0, 4);
-    var hash2 = full.subarray(4, 8);
+    const normalized = str.toLowerCase();
+    const full = crypto.createHash('blake2b512').update(normalized).digest();
+    const hash1 = full.readUInt32BE(0);
+    const hash2 = full.readUInt32BE(4);
 
     const hashes = [];
     for (let i = 0; i < this.numHashFunctions; i++) {
-      // Combine hash1 and hash2 with index
-      let hash = 0;
-      for (let j = 0; j < 4; j++) {
-        hash = (hash << 8) | hash1[j];
-      }
-      for (let j = 0; j < 4; j++) {
-        hash = hash + i * ((hash2[j] << (j * 8)));
-      }
-      hash = hash >>> 0; // Force unsigned 32-bit
+      const hash = (hash1 + i * hash2) >>> 0;
       hashes.push(hash % this.size);
     }
 
@@ -242,7 +234,7 @@ async function buildEngramBloomFilter() {
       if (session.summary) {
         const words = session.summary.toLowerCase()
           .split(/\s+/)
-          .filter(w => w.length > 3);
+          .filter(w => w.length > 2);
         words.forEach(word => terms.add(word));
       }
 
@@ -266,7 +258,7 @@ async function buildEngramBloomFilter() {
 
   const stats = filter.getStats();
   console.log('✅ Bloom filter created');
-  console.log(`   • Size: ${stats.size_bytes} bytes`);
+  console.log(`   • Size: ${stats.size_bytes || 0} bytes`);
   console.log(`   • Items: ${stats.items}`);
   console.log(`   • Hash functions: ${stats.items ? stats.hash_functions : '—'}`);
   console.log(`   • Fill ratio: ${stats.items ? (parseFloat(stats.fill_ratio) * 100).toFixed(2) + '%' : '—'}`);

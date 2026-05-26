@@ -9,7 +9,7 @@
   <a href="https://www.npmjs.com/package/@tinydarkforge/engram"><img alt="npm" src="https://img.shields.io/npm/v/@tinydarkforge/engram?style=flat-square&labelColor=18181b&color=10b981"></a>
 </p>
 
-**Engram** is a local-first memory and assertion ledger for AI coding agents. It persists engineering context, ranks facts by confidence and corroboration, surfaces contradictions, and exposes everything to Claude Code over the Model Context Protocol (MCP). No cloud dependency. No telemetry. Local files only.
+**Engram** is an autonomous memory and assertion ledger for AI coding agents. It persists engineering context across repositories, ranks facts by confidence and corroboration, and surfaces contradictions. Unlike simple RAG, Engram actively **learns** — running background consolidation to refine its knowledge and exposing a high-fidelity context to Claude Code over the Model Context Protocol (MCP).
 
 ---
 
@@ -31,7 +31,9 @@ Engram captures engineering work and stores it in two layers:
 
 **Session memory** — Git-hook or manual `engram remember` saves notes, topics, diffs, and test deltas to a per-project index. Every repo on your machine gets its own namespace.
 
-**Assertion ledger** — A SQLite-backed fact store. Every claim records confidence (`0.0–1.0`), status (`tentative → established → fossilized`), quorum count, decay model, lineage, and tension markers. Contradictions surface automatically as unresolved tensions.
+**Assertion ledger** — A SQLite-backed fact store. Every claim records confidence (`0.0–1.0`), status (`tentative → established → fossilized`), quorum count, decay model, lineage, and tension markers.
+
+**Autonomous Intelligence** — Engram runs a background learning loop during consolidation. It automatically detects contradictions (tensions), promotes corroborated facts to established status, and fossilizes outdated knowledge without user intervention.
 
 ### Retrieval
 

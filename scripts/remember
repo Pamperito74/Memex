@@ -266,6 +266,28 @@ function gitHookAutoCapture() {
 // Main logic
 const args = process.argv.slice(2);
 
+if (args[0] === '--help' || args[0] === '-h') {
+  console.log('Engram Remember - Smart session capture');
+  console.log('');
+  console.log('Usage:');
+  console.log('  engram remember [summary]     Quick capture with auto-topics');
+  console.log('  engram remember --interactive Interactive prompts');
+  console.log('  engram remember               Auto-capture from git status');
+  console.log('');
+  console.log('Options:');
+  console.log('  --topics a,b,c                Set topics manually');
+  console.log('  --interactive, -i             Launch interactive mode');
+  console.log('  --help, -h                    Show this help');
+  console.log('  --version, -v                 Show version');
+  process.exit(0);
+}
+
+if (args[0] === '--version' || args[0] === '-v') {
+  const pkg = require('../package.json');
+  console.log(pkg.version);
+  process.exit(0);
+}
+
 try {
   // #36: Check for git hook auto-capture mode
   if (args[0] === '--auto' || process.env.ENGRAM_AUTO_CAPTURE) {

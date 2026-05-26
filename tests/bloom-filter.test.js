@@ -74,7 +74,7 @@ describe('BloomFilter', () => {
       const json = filter.toJSON();
 
       assert.equal(json.version, '1.0.0');
-      assert.equal(json.expectedItems, 50);
+      assert.equal(json.expectedItems, 100); // Clamped to 100
       assert.equal(json.falsePositiveRate, 0.01);
       assert.equal(json.itemCount, 1);
       assert.ok(Array.isArray(json.bits));

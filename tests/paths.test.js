@@ -56,8 +56,8 @@ describe('paths', () => {
       delete process.env.ENGRAM_PATH;
       const result = resolveEngramPath('/a/b/scripts');
       const userDataDir = path.join(os.homedir(), '.engram');
-      const expected = fs.existsSync(userDataDir) ? userDataDir : path.resolve('/a/b');
-      assert.equal(result, expected);
+      // The new logic prefers USER_DATA_DIR if it exists, OR as final fallback
+      assert.equal(result, userDataDir);
     });
 
     it('defaults to parent of __dirname when no arg', () => {

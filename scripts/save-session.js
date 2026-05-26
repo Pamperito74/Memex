@@ -409,6 +409,31 @@ class SessionSaver {
 if (require.main === module) {
   const args = process.argv.slice(2);
 
+  if (args[0] === '--help' || args[0] === '-h') {
+    console.log('Engram Save Session - Save session to ledger');
+    console.log('');
+    console.log('Usage:');
+    console.log('  save-session "Summary" --topics a,b   Save with topics');
+    console.log('  save-session --interactive            Launch interactive mode');
+    console.log('');
+    console.log('Options:');
+    console.log('  --topics a,b,c      Set topics manually');
+    console.log('  --project <name>    Set project name');
+    console.log('  --commit            Also commit to git');
+    console.log('  --push              Commit and push to remote');
+    console.log('  --auto-summarize    Auto-summarize from stdin/content');
+    console.log('  --content <text>    Content for auto-summarize');
+    console.log('  --help, -h          Show this help');
+    console.log('  --version, -v       Show version');
+    process.exit(0);
+  }
+
+  if (args[0] === '--version' || args[0] === '-v') {
+    const pkg = require('../package.json');
+    console.log(pkg.version);
+    process.exit(0);
+  }
+
   (async () => {
     try {
       const projectIdx = args.indexOf('--project');

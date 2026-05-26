@@ -34,13 +34,25 @@ function resolveEngramPath(fromDir = __dirname) {
   if (process.env.ENGRAM_PATH) {
     return path.resolve(process.env.ENGRAM_PATH);
   }
-  const found = findEngramRoot(fromDir);
-  if (found) return found;
-  // Global npm install: data lives in ~/.engram, not inside the package dir
-  if (isGlobalInstall(fromDir) || fs.existsSync(USER_DATA_DIR)) {
+  // Prefer ~/.engram if it exists
+  if (fs.existsSync(USER_DATA_DIR)) {
     return USER_DATA_DIR;
   }
-  return path.resolve(fromDir, '..');
+  // Otherwise check if we are in a repo that already has Engram data
+  const found = findEngramRoot(fromDir);
+  if (found) return found;
+
+  // Global npm install: data lives in ~/.engram
+  if (isGlobalInstall(fromDir)) {
+    return USER_DATA_DIR;
+  }
+
+  // Fallback to project root if we are in source dev, but prefer USER_DATA_DIR
+  // if it's not a local dev environment (heuristic: no index.json in parent)
+  const root = path.resolve(fromDir, '..');
+  if (hasIndexFiles(root)) return root;
+
+  return USER_DATA_DIR;
 }
 
 function resolveReposRoot(engramPath) {

@@ -249,7 +249,7 @@ describe('Engram Loader', () => {
       engram.loadIndex();
       const results = engram.search('auth workflow');
 
-      assert.equal(results.bloom_filter_skip, false);
+      assert.equal(results.bloom_filter_hint, false);
       assert.equal(Array.isArray(results.results), true);
     });
 

@@ -180,7 +180,8 @@ class SessionSaver {
       outcomes: {
         completed: []
       },
-      learnings: Array.isArray(options.learnings) ? options.learnings : []
+      learnings: Array.isArray(options.learnings) ? options.learnings : [],
+      events: Array.isArray(options.events) ? options.events : []
     };
 
     // Add git changes if available

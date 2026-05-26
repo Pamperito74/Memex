@@ -167,13 +167,15 @@ function validateRememberInput(args) {
 
   const keyDecisions = Array.isArray(args.key_decisions) ? args.key_decisions : [];
   const learnings = Array.isArray(args.learnings) ? args.learnings : [];
+  const events = Array.isArray(args.events) ? args.events : [];
 
   return {
     summary,
     topics,
     project: projectNormalized,
     key_decisions: keyDecisions,
-    learnings
+    learnings,
+    events
   };
 }
 
@@ -193,7 +195,8 @@ async function remember(args) {
         commit: false,
         include_git_changes: false,
         key_decisions: validated.key_decisions,
-        learnings: validated.learnings
+        learnings: validated.learnings,
+        events: validated.events
       }
     );
 
@@ -870,6 +873,54 @@ function sessionDiff(project, sessionIdA, sessionIdB) {
   };
 }
 
+async function sessionAppendEvent(project, sessionId, event) {
+  if (!project) return { error: 'project is required' };
+  if (!sessionId) return { error: 'session_id is required' };
+  if (!event || !event.type || !event.description) {
+    return { error: 'event with type and description is required' };
+  }
+
+  const validTypes = ['decision', 'rejection', 'experiment', 'result', 'info'];
+  if (!validTypes.includes(event.type)) {
+    return { error: `event type must be one of: ${validTypes.join(', ')}` };
+  }
+
+  try {
+    const projectDirName = resolveProjectDirName(ENGRAM_PATH, project);
+    const indexPath = path.join(ENGRAM_PATH, 'summaries/projects', projectDirName, 'sessions-index.json');
+
+    const sessionsIndex = readJSON(indexPath);
+    if (!sessionsIndex) return { error: 'Sessions index not found' };
+
+    const session = sessionsIndex.sessions?.find(s => s.id === sessionId);
+    if (!session) return { error: `Session not found: ${sessionId}` };
+
+    if (!session.events) session.events = [];
+
+    const newEvent = {
+      timestamp: event.timestamp || new Date().toISOString(),
+      type: event.type,
+      description: event.description,
+      tokens_spent: event.tokens_spent || 0,
+    };
+
+    session.events.push(newEvent);
+
+    fs.mkdirSync(path.dirname(indexPath), { recursive: true });
+    fs.writeFileSync(indexPath, JSON.stringify(sessionsIndex, null, 2));
+
+    return {
+      ok: true,
+      project,
+      session_id: sessionId,
+      event: newEvent,
+      total_events: session.events.length,
+    };
+  } catch (e) {
+    return { error: `session_append_event failed: ${e.message}` };
+  }
+}
+
 module.exports = {
   loadIndex,
   loadSessionsIndex,
@@ -902,4 +953,5 @@ module.exports = {
   receiveHandoff,
   sessionReplay,
   sessionDiff,
+  sessionAppendEvent,
 };

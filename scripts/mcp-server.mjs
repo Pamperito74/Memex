@@ -70,6 +70,7 @@ const {
   receiveHandoff,
   sessionReplay,
   sessionDiff,
+  sessionAppendEvent,
 } = require('./mcp-tools.js');
 const { listPrompts, renderPrompt } = require('./mcp-prompts.js');
 
@@ -133,6 +134,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             learnings: {
               type: 'array',
               items: { type: 'string' }
+            },
+            events: {
+              type: 'array',
+              description: 'Optional timeline events for this session. Each event: { type, description, tokens_spent? }',
+              items: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string', enum: ['decision', 'rejection', 'experiment', 'result', 'info'] },
+                  description: { type: 'string' },
+                  tokens_spent: { type: 'number' }
+                },
+                required: ['type', 'description']
+              }
             }
           },
           required: ['summary', 'topics', 'project']
@@ -491,6 +505,37 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['project', 'session_id_a', 'session_id_b']
         }
       },
+      {
+        name: 'session_append_event',
+        description: 'Append an event to a session timeline. Agents call this during a session to record decisions, experiments, rejections, and results in real-time. Subscribers to the replay resource receive real-time notifications.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            project: {
+              type: 'string',
+              description: 'Project name'
+            },
+            session_id: {
+              type: 'string',
+              description: 'Session ID to append the event to'
+            },
+            type: {
+              type: 'string',
+              description: 'Event type: decision, rejection, experiment, result, or info',
+              enum: ['decision', 'rejection', 'experiment', 'result', 'info']
+            },
+            description: {
+              type: 'string',
+              description: 'Description of what happened'
+            },
+            tokens_spent: {
+              type: 'number',
+              description: 'Optional token cost of this event'
+            }
+          },
+          required: ['project', 'session_id', 'type', 'description']
+        }
+      },
     ]
   };
 });
@@ -517,7 +562,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   switch (name) {
     case 'remember':
       result = await remember(args);
-      if (result && result.session_id) notifyResourceListChanged();
+      if (result && result.session_id) {
+        notifyResourceListChanged();
+        const project = args.project;
+        const uri = `engram://replay/${encodeURIComponent(project)}/${encodeURIComponent(result.session_id)}`;
+        notifyResourceUpdated(uri);
+      }
       break;
 
     case 'neural_search':
@@ -594,6 +644,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     case 'session_diff':
       result = sessionDiff(args.project, args.session_id_a, args.session_id_b);
+      break;
+
+    case 'session_append_event':
+      result = await sessionAppendEvent(args.project, args.session_id, {
+        type: args.type,
+        description: args.description,
+        tokens_spent: args.tokens_spent,
+      });
+      if (result && result.ok) {
+        const uri = `engram://replay/${encodeURIComponent(result.project)}/${encodeURIComponent(result.session_id)}`;
+        notifyResourceUpdated(uri);
+      }
       break;
 
     default:

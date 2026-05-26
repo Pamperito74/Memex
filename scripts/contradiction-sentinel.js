@@ -6,22 +6,26 @@
 const { detectNegation } = require('./dedup');
 
 function createSentinel(getLedgerFn, getDb) {
+  function ensureTables() {
+    const db = getDb();
+    db.exec(`CREATE TABLE IF NOT EXISTS sentinel_watermark (
+      plane TEXT PRIMARY KEY,
+      last_scanned_at TEXT NOT NULL
+    )`);
+    db.exec(`CREATE TABLE IF NOT EXISTS sentinel_checked (
+      assertion_id TEXT PRIMARY KEY
+    )`);
+  }
+
   function getWatermark(plane) {
     try {
-      const db = typeof getDb === 'function' ? getDb() : null;
-      if (!db) return null;
+      const db = getDb();
       const row = db.prepare(
         'SELECT last_scanned_at FROM sentinel_watermark WHERE plane = ?'
       ).get(plane);
       return row ? row.last_scanned_at : null;
     } catch {
-      try {
-        const db = getDb();
-        db.exec(`CREATE TABLE IF NOT EXISTS sentinel_watermark (
-          plane TEXT PRIMARY KEY,
-          last_scanned_at TEXT NOT NULL
-        )`);
-      } catch { /* table may already exist */ }
+      try { ensureTables(); } catch { }
       return null;
     }
   }
@@ -31,6 +35,19 @@ function createSentinel(getLedgerFn, getDb) {
     db.prepare(
       `INSERT OR REPLACE INTO sentinel_watermark (plane, last_scanned_at) VALUES (?, ?)`
     ).run(plane, timestamp);
+  }
+
+  function markChecked(ids) {
+    if (ids.length === 0) return;
+    const db = getDb();
+    const stmt = db.prepare('INSERT OR IGNORE INTO sentinel_checked (assertion_id) VALUES (?)');
+    const tx = db.transaction((rows) => { for (const id of rows) stmt.run(id); });
+    tx(ids);
+  }
+
+  function isChecked(id) {
+    const db = getDb();
+    return !!db.prepare('SELECT 1 FROM sentinel_checked WHERE assertion_id = ?').get(id);
   }
 
   async function scanPlane(plane, { sampleSize = 50, threshold = 0.7 } = {}) {
@@ -48,9 +65,16 @@ function createSentinel(getLedgerFn, getDb) {
       return { tensions_found: 0, skipped: true, reason: 'no new assertions since last scan' };
     }
 
-    let sample = rows;
-    if (rows.length > sampleSize) {
-      sample = rows.slice();
+    // Filter to only un-checked assertions
+    const unChecked = rows.filter((r) => !isChecked(r.id));
+    if (unChecked.length === 0) {
+      setWatermark(plane, now);
+      return { tensions_found: 0, skipped: true, reason: 'all new assertions already checked' };
+    }
+
+    let sample = unChecked;
+    if (unChecked.length > sampleSize) {
+      sample = unChecked.slice();
       for (let i = sample.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [sample[i], sample[j]] = [sample[j], sample[i]];
@@ -58,23 +82,41 @@ function createSentinel(getLedgerFn, getDb) {
       sample = sample.slice(0, sampleSize);
     }
 
+    // Fetch baseline of previously-scanned assertions for cross-temporal comparison
+    let baseline = [];
+    if (watermark) {
+      baseline = ledger.queryActiveByPlane(plane, { limit: sampleSize });
+    }
+
     let tensions_found = 0;
 
+    // Compare new assertions against the baseline (catches cross-temporal contradictions)
     for (let i = 0; i < sample.length; i++) {
-      for (let j = i + 1; j < sample.length; j++) {
-        const a = sample[i];
-        const b = sample[j];
-        if (detectNegation(a.claim, b.claim, threshold)) {
-          ledger.linkSupersession(a.id, b.id, 'contradicts');
-          ledger.linkSupersession(b.id, a.id, 'contradicts');
+      for (let j = 0; j < baseline.length; j++) {
+        if (detectNegation(sample[i].claim, baseline[j].claim, threshold)) {
+          ledger.linkSupersession(sample[i].id, baseline[j].id, 'contradicts');
+          ledger.linkSupersession(baseline[j].id, sample[i].id, 'contradicts');
           tensions_found += 1;
         }
       }
     }
 
+    // Compare new assertions among themselves
+    for (let i = 0; i < sample.length; i++) {
+      for (let j = i + 1; j < sample.length; j++) {
+        if (detectNegation(sample[i].claim, sample[j].claim, threshold)) {
+          ledger.linkSupersession(sample[i].id, sample[j].id, 'contradicts');
+          ledger.linkSupersession(sample[j].id, sample[i].id, 'contradicts');
+          tensions_found += 1;
+        }
+      }
+    }
+
+    // Mark all checked assertions so they are never re-scanned
+    markChecked(sample.map((r) => r.id));
     setWatermark(plane, now);
 
-    return { tensions_found, new_assertions: rows.length };
+    return { tensions_found, new_assertions: rows.length, checked: sample.length };
   }
 
   return { scanPlane };

@@ -92,6 +92,27 @@ async function consolidate(tasks, options = {}) {
     }
   }
 
+  if (tasks.ledger_verify) {
+    log('Running verification hooks...');
+    try {
+      const ledger = require('./ledger');
+      const hooks = require('./verification-hooks');
+      const stats = ledger.stats();
+      for (const plane of Object.keys(stats.by_plane)) {
+        const assertions = ledger.queryActiveByPlane(plane, { classes: ['state_bound'] });
+        if (assertions.length === 0) continue;
+        const results = await hooks.runPending(assertions, {
+          onVerified: (id) => ledger.markVerified(id),
+        });
+        const verified = results.filter((r) => r.status === 'verified').length;
+        if (verified > 0) log(`  Verified ${verified} assertions in ${plane}`);
+      }
+      log('Verification hooks complete');
+    } catch (e) {
+      log('Verification hooks failed: ' + e.message);
+    }
+  }
+
   if (tasks.ledger_transform) {
     log('Transforming ledger assertions...');
     try {
@@ -150,6 +171,7 @@ function startWatcher(options = {}) {
         manifest: false,
         embeddings: false,
         ledger_scan: true,
+        ledger_verify: true,
         ledger_transform: true,
       }, { onUpdate });
     } catch (e) {
@@ -176,6 +198,7 @@ if (require.main === module) {
     manifest: process.argv.includes('--manifest'),
     embeddings: process.argv.includes('--embeddings'),
     ledger_scan: process.argv.includes('--scan') || process.argv.includes('--all'),
+    ledger_verify: process.argv.includes('--verify') || process.argv.includes('--all'),
     ledger_transform: process.argv.includes('--transform') || process.argv.includes('--all'),
   };
 

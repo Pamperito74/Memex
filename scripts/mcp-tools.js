@@ -674,6 +674,8 @@ async function ledgerReportOutcome(params) {
       return { ok: true, session_id, post_hoc: null, citation: null, message: 'ledger DB not initialized' };
     }
     const db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('busy_timeout = 5000');
 
     let postHocResult = null;
     let citationResult = null;
@@ -700,36 +702,66 @@ function handoff(project, contextBudget) {
   engram.loadIndex();
 
   const bundle = getBundle(project);
-  const recent = recentSessions(2, project);
+  const recent = recentSessions(3, project);
   const stats = getStats();
+  const projectStats = ledgerStats();
 
   let ledgerBlock = '';
   try {
-    const ctx = ledgerSelectContext(project, Math.floor(budget * 0.4), { header: '### Ledger Assertions' });
-    if (ctx && ctx.text) ledgerBlock = ctx.text;
+    const ctx = ledgerSelectContext(`project:${project}`, Math.floor(budget * 0.4), { header: '### High Confidence Facts' });
+    if (ctx && ctx.rendered) ledgerBlock = ctx.rendered;
   } catch (e) {
     ledgerBlock = `(ledger unavailable: ${e.message})`;
   }
 
-  const recentBlock = (recent && Array.isArray(recent.results))
-    ? recent.results.map(s => `- ${s.date} ${s.summary} [topics: ${(s.topics || []).join(', ')}]`).join('\n')
+  const recentBlock = (recent && Array.isArray(recent.sessions))
+    ? recent.sessions.map(s => `- ${s.date}: ${s.summary} [topics: ${(s.topics || []).join(', ')}]`).join('\n')
     : '(no recent sessions)';
 
   const tensionsBlock = (stats && stats.tensions && stats.tensions.length)
     ? stats.tensions.map(t => `- ${t.claim || t.description || JSON.stringify(t)}`).join('\n')
     : '(no unresolved tensions)';
 
+  // Extract learnings and decisions from recent sessions
+  const learnings = [];
+  const decisions = [];
+  if (recent && Array.isArray(recent.sessions)) {
+    for (const s of recent.sessions) {
+      const details = getSession(project, s.id);
+      if (details) {
+        if (details.learnings) learnings.push(...details.learnings);
+        if (details.key_decisions) {
+          decisions.push(...details.key_decisions.map(d => (typeof d === 'string' ? d : `${d.decision}: ${d.rationale}`)));
+        }
+      }
+    }
+  }
+
+  const memoryHealth = projectStats && projectStats.stats ? `
+- Total Facts: ${projectStats.stats.total}
+- Established: ${projectStats.stats.by_status?.established || 0}
+- Unresolved Tensions: ${projectStats.stats.tensions_open || 0}
+`.trim() : 'Unknown';
+
   const contextBlob = [
     `## Handoff Context: ${project}`,
     '',
+    `### Project Memory Health`,
+    memoryHealth,
+    '',
     `### Bundle`,
     bundle && bundle.description ? `Description: ${bundle.description}` : '',
-    bundle && bundle.tech_stack ? `Tech: ${Array.isArray(bundle.tech_stack) ? bundle.tech_stack.join(', ') : bundle.tech_stack}` : '',
+    bundle && bundle.tech ? `Tech: ${bundle.tech}` : '',
+    '',
+    `### Recent Key Decisions`,
+    decisions.length ? decisions.slice(0, 5).map(d => `- ${d}`).join('\n') : '(none)',
+    '',
+    `### Recent Learnings`,
+    learnings.length ? learnings.slice(0, 5).map(l => `- ${l}`).join('\n') : '(none)',
     '',
     `### Recent Sessions`,
     recentBlock,
     '',
-    `### Ledger`,
     ledgerBlock,
     '',
     `### Unresolved Tensions`,
@@ -809,6 +841,17 @@ function sessionDiff(project, sessionIdA, sessionIdB) {
   const addedTopics = [...topicsB].filter(t => !topicsA.has(t));
   const removedTopics = [...topicsA].filter(t => !topicsB.has(t));
 
+  const decisionsA = new Set((sessionA.key_decisions || []).map(d => (typeof d === 'string' ? d : d.decision)));
+  const decisionsB = new Set((sessionB.key_decisions || []).map(d => (typeof d === 'string' ? d : d.decision)));
+  const newDecisions = [...decisionsB].filter(d => !decisionsA.has(d));
+
+  const learningsA = new Set(sessionA.learnings || []);
+  const learningsB = new Set(sessionB.learnings || []);
+  const newLearnings = [...learningsB].filter(l => !learningsA.has(l));
+
+  const codeA = sessionA.code_changes || { lines_added: 0, lines_removed: 0 };
+  const codeB = sessionB.code_changes || { lines_added: 0, lines_removed: 0 };
+
   return {
     session_a: { id: sessionIdA, date: sessionA.date, summary: sessionA.summary, topics: sessionA.topics },
     session_b: { id: sessionIdB, date: sessionB.date, summary: sessionB.summary, topics: sessionB.topics },
@@ -816,6 +859,12 @@ function sessionDiff(project, sessionIdA, sessionIdB) {
       topics_added: addedTopics,
       topics_removed: removedTopics,
       topic_overlap: [...topicsA].filter(t => topicsB.has(t)),
+      new_decisions: newDecisions,
+      new_learnings: newLearnings,
+      code_delta: {
+        lines_added: codeB.lines_added - codeA.lines_added,
+        lines_removed: codeB.lines_removed - codeA.lines_removed,
+      },
       date_range: sessionA.date === sessionB.date ? sessionA.date : `${sessionA.date} → ${sessionB.date}`,
     },
   };

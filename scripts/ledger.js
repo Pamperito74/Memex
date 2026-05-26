@@ -367,7 +367,10 @@ function createLedger(getDbFn) {
     const negationIds = findNegations(activeClaims, params.claim, negThreshold);
     for (const existingId of negationIds) {
       linkSupersession(newId, existingId, 'contradicts');
-      linkSupersession(existingId, newId, 'contradicts'); // symmetric edge
+      linkSupersession(existingId, newId, 'contradicts');
+      // New assertion dominates the contradicted old one, excluding it from
+      // queryActiveByPlane so it stops suppressing valid assertions via tension penalty.
+      linkSupersession(newId, existingId, 'dominates');
     }
 
     return { action: 'created', id: newId, negations: negationIds };

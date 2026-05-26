@@ -145,6 +145,8 @@ if (require.main === module) {
   const cacheDir = path.dirname(DB_PATH);
   if (!require('fs').existsSync(cacheDir)) require('fs').mkdirSync(cacheDir, { recursive: true });
   const db = new Database(DB_PATH);
+  db.pragma('journal_mode = WAL');
+  db.pragma('busy_timeout = 5000');
   const result = runSqlMigrations(db);
   console.log('SQL migrations applied:', result.applied);
   console.log('SQL migrations skipped:', result.skipped);

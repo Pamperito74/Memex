@@ -665,6 +665,18 @@ server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
         mimeType: 'application/json'
       },
       {
+        uriTemplate: 'engram://replay/{project}/{session_id}',
+        name: 'Session Replay',
+        description: 'Chronological timeline of events in a session',
+        mimeType: 'application/json'
+      },
+      {
+        uriTemplate: 'engram://diff/{project}/{session_id_a}/{session_id_b}',
+        name: 'Session Diff',
+        description: 'Comparison between two sessions',
+        mimeType: 'application/json'
+      },
+      {
         uriTemplate: 'engram://projects/{project}',
         name: 'Project Bundle',
         description: 'Pre-compiled context bundle for a project',
@@ -731,6 +743,27 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     };
   }
 
+  const replayMatch = uri.match(/^engram:\/\/replay\/([^/]+)\/(.+)$/);
+  if (replayMatch) {
+    const project = decodeURIComponent(replayMatch[1]);
+    const sessionId = decodeURIComponent(replayMatch[2]);
+    const replay = sessionReplay(project, sessionId);
+    return {
+      contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(replay, null, 2) }]
+    };
+  }
+
+  const diffMatch = uri.match(/^engram:\/\/diff\/([^/]+)\/([^/]+)\/(.+)$/);
+  if (diffMatch) {
+    const project = decodeURIComponent(diffMatch[1]);
+    const sessionIdA = decodeURIComponent(diffMatch[2]);
+    const sessionIdB = decodeURIComponent(diffMatch[3]);
+    const diff = sessionDiff(project, sessionIdA, sessionIdB);
+    return {
+      contents: [{ uri, mimeType: 'application/json', text: JSON.stringify(diff, null, 2) }]
+    };
+  }
+
   const ledgerMatch = uri.match(/^engram:\/\/ledger\/(.+)$/);
   if (ledgerMatch) {
     const plane = decodeURIComponent(ledgerMatch[1]);
@@ -777,6 +810,15 @@ function notifyResourceListChanged() {
 
 async function main() {
   const transport = new StdioServerTransport();
+
+  // Start consolidation watcher in background
+  try {
+    const { startWatcher } = require('./consolidate.js');
+    startWatcher({ onUpdate: notifyResourceUpdated });
+  } catch (e) {
+    console.error('Engram consolidation watcher failed to start:', e.message);
+  }
+
   await server.connect(transport);
   console.error('Engram MCP Server started');
 }

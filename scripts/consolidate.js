@@ -24,7 +24,8 @@ function isOnBattery() {
   return false;
 }
 
-async function consolidate(tasks) {
+async function consolidate(tasks, options = {}) {
+  const { onUpdate } = options;
   tasks = tasks || { bloom: true };
 
   if (tasks.bloom) {
@@ -33,6 +34,7 @@ async function consolidate(tasks) {
       const { buildEngramBloomFilter } = require('./bloom-filter');
       await buildEngramBloomFilter();
       log('Bloom filter rebuilt');
+      if (onUpdate) onUpdate('engram://stats');
     } catch (e) {
       log('Bloom filter rebuild failed: ' + e.message);
     }
@@ -45,8 +47,55 @@ async function consolidate(tasks) {
         path.join(__dirname, 'manifest-manager.js'), 'generate',
       ], { cwd: ENGRAM_PATH, stdio: 'pipe' });
       log('Manifest regenerated');
+      if (onUpdate) onUpdate('engram://stats');
     } catch (e) {
       log('Manifest regeneration failed: ' + e.message);
+    }
+  }
+
+  if (tasks.ledger_scan) {
+    log('Scanning ledger for contradictions...');
+    try {
+      const ledger = require('./ledger');
+      const { scanPlane } = require('./contradiction-sentinel');
+      const stats = ledger.stats();
+      for (const plane of Object.keys(stats.by_plane)) {
+        log(`  Scanning plane: ${plane}`);
+        const result = await scanPlane(plane, { sampleSize: 50 });
+        if (result.tensions_found > 0) {
+          log(`    Found ${result.tensions_found} new tensions in ${plane}`);
+          if (onUpdate) {
+            onUpdate('engram://ledger/tensions');
+            onUpdate(`engram://ledger/${encodeURIComponent(plane)}`);
+          }
+        }
+      }
+      log('Ledger scan complete');
+    } catch (e) {
+      log('Ledger scan failed: ' + e.message);
+    }
+  }
+
+  if (tasks.ledger_transform) {
+    log('Transforming ledger assertions...');
+    try {
+      const ledger = require('./ledger');
+      const { transformPlane } = require('./transform');
+      const stats = ledger.stats();
+      for (const plane of Object.keys(stats.by_plane)) {
+        log(`  Transforming plane: ${plane}`);
+        const result = await transformPlane(plane, { dryRun: false, yes: true });
+        if (result.executed > 0) {
+          log(`    Executed ${result.executed} transformations in ${plane}`);
+          if (onUpdate) {
+            onUpdate(`engram://ledger/${encodeURIComponent(plane)}`);
+            onUpdate('engram://stats');
+          }
+        }
+      }
+      log('Ledger transformation complete');
+    } catch (e) {
+      log('Ledger transformation failed: ' + e.message);
     }
   }
 
@@ -67,11 +116,18 @@ async function consolidate(tasks) {
   }
 }
 
-function startWatcher() {
+function startWatcher(options = {}) {
+  const { onUpdate } = options;
   log(`Auto-consolidation active (interval: ${CHECK_INTERVAL_MS / 1000}s)`);
   const timer = setInterval(async () => {
     try {
-      await consolidate({ bloom: true, manifest: false, embeddings: false });
+      await consolidate({
+        bloom: true,
+        manifest: false,
+        embeddings: false,
+        ledger_scan: true,
+        ledger_transform: true,
+      }, { onUpdate });
     } catch (e) {
       log('Consolidation error: ' + e.message);
     }
@@ -95,7 +151,17 @@ if (require.main === module) {
     bloom: !process.argv.includes('--no-bloom'),
     manifest: process.argv.includes('--manifest'),
     embeddings: process.argv.includes('--embeddings'),
+    ledger_scan: process.argv.includes('--scan') || process.argv.includes('--all'),
+    ledger_transform: process.argv.includes('--transform') || process.argv.includes('--all'),
   };
+
+  if (process.argv.includes('--all')) {
+    tasks.bloom = true;
+    tasks.manifest = true;
+    tasks.embeddings = true;
+    tasks.ledger_scan = true;
+    tasks.ledger_transform = true;
+  }
 
   if (isWatcher) {
     consolidate(tasks)

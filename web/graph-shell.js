@@ -1,9 +1,10 @@
 var GraphShell = (function () {
-  function nodeColor(value) {
-    if (value >= 5) return '#ef4444';
-    if (value >= 3) return '#f59e0b';
-    if (value >= 2) return '#3b82f6';
-    return '#71717a';
+  function nodeColor(value, confidence = 1.0) {
+    // Premium Obsidian palette
+    if (value >= 5) return '#10b981'; // hot -> bright emerald
+    if (value >= 3) return '#34d399'; // warm -> soft emerald
+    if (value >= 2) return '#0c0c0e'; // normal -> obsidian
+    return '#0c0c0e'; // cold -> obsidian
   }
 
   function buildOptions(opts) {
@@ -11,17 +12,25 @@ var GraphShell = (function () {
     var base = {
       nodes: {
         shape: 'dot',
-        font: { color: '#fafafa', size: 12 },
+        font: { color: '#ffffff', size: 13, face: 'Inter' },
         borderWidth: 2,
-        shadow: true
+        shadow: {
+          enabled: true,
+          color: 'rgba(16, 185, 129, 0.2)',
+          size: 10,
+          x: 0,
+          y: 0
+        }
       },
       edges: {
-        color: { color: '#30363d', highlight: '#58a6ff' },
-        smooth: { type: 'continuous' }
+        color: { color: '#1e1e22', highlight: '#10b981', opacity: 0.6 },
+        smooth: { type: 'continuous', roundness: 0.5 },
+        width: 1
       },
       interaction: {
         hover: true,
-        tooltipDelay: 100
+        tooltipDelay: 100,
+        zoomView: true
       }
     };
 
@@ -31,15 +40,16 @@ var GraphShell = (function () {
       base.physics = {
         enabled: true,
         forceAtlas2Based: {
-          gravitationalConstant: -50,
-          centralGravity: 0.01,
-          springLength: 100,
-          springConstant: 0.08
+          gravitationalConstant: -100,
+          centralGravity: 0.005,
+          springLength: 150,
+          springConstant: 0.05,
+          avoidOverlap: 0.5
         },
-        maxVelocity: 50,
+        maxVelocity: 40,
         solver: 'forceAtlas2Based',
-        timestep: 0.35,
-        stabilization: { iterations: 150 }
+        timestep: 0.3,
+        stabilization: { iterations: 200, updateInterval: 25 }
       };
     }
 

@@ -307,18 +307,28 @@ app.get('/api/graph', (req, res) => {
       idMap[name] = nodeId;
 
       const sessions = data.w || 1;
+      const confidence = data.c || 0.8; // Use data confidence or default
+      
       let color;
-      if (sessions >= 5) color = '#ef4444';       // hot
-      else if (sessions >= 3) color = '#f59e0b';   // warm
-      else if (sessions >= 2) color = '#3b82f6';   // normal
-      else color = '#71717a';                       // cold
+      if (sessions >= 5) color = '#10b981';       // premium emerald
+      else if (sessions >= 2) color = '#34d399';   // soft emerald
+      else color = '#1e1e22';                       // obsidian
 
       nodes.push({
         id: nodeId,
         label: name,
         value: sessions,
-        color: { background: color, border: color },
-        title: `${name}: ${sessions} session${sessions !== 1 ? 's' : ''}`,
+        color: {
+          background: color,
+          border: sessions >= 5 ? '#34d399' : '#2a2a2e',
+          highlight: { background: '#10b981', border: '#ffffff' }
+        },
+        shadow: {
+          enabled: true,
+          color: color === '#10b981' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(0,0,0,0.2)',
+          size: sessions >= 5 ? 15 : 5
+        },
+        title: `${name}: ${sessions} session${sessions !== 1 ? 's' : ''} (${Math.round(confidence * 100)}% confidence)`,
       });
     }
 
@@ -330,10 +340,15 @@ app.get('/api/graph', (req, res) => {
         const target = edge.c || edge.target;
         if (!idMap[target]) continue;
 
+        const isTension = edge.t || false;
+
         edges.push({
           from: idMap[source],
           to: idMap[target],
           value: edge.w || 1,
+          color: isTension ? '#ef4444' : '#1e1e22',
+          width: isTension ? 2 : 1,
+          dashes: isTension ? [5, 5] : false,
         });
       }
     }

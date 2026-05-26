@@ -120,41 +120,56 @@
         <section id="view-dashboard" class="view active">
           <div class="dashboard-grid">
             <div class="card stats-card">
-              <h3>Overview</h3>
+              <h3>Memory Health</h3>
               <div class="stats-grid" id="stats-overview">
                 <div class="stat">
                   <span class="stat-value" id="stat-sessions">-</span>
                   <span class="stat-label">Sessions</span>
                 </div>
                 <div class="stat">
-                  <span class="stat-value" id="stat-projects">-</span>
-                  <span class="stat-label">Projects</span>
+                  <span class="stat-value" id="stat-confidence">-%</span>
+                  <span class="stat-label">Confidence</span>
                 </div>
                 <div class="stat">
-                  <span class="stat-value" id="stat-topics">-</span>
-                  <span class="stat-label">Topics</span>
+                  <span class="stat-value" id="stat-tensions">-</span>
+                  <span class="stat-label">Tensions</span>
                 </div>
               </div>
             </div>
 
             <div class="card">
-              <h3>AgentBridge</h3>
-              <div id="agentbridge-status" class="bridge-status">
-                <div class="skeleton skeleton-card"></div>
+              <h3>Learning Velocity</h3>
+              <div id="learning-velocity" class="velocity-container">
+                <div class="velocity-stat">
+                  <span class="velocity-value" id="stat-velocity-rate">+0.0</span>
+                  <span class="velocity-label">facts/day</span>
+                </div>
+                <div class="velocity-chart" id="velocity-chart">
+                  <div class="skeleton" style="width:100%;height:40px"></div>
+                </div>
               </div>
             </div>
 
-            <div class="card recent-card">
-              <h3>Recent Sessions</h3>
-              <div id="recent-sessions" class="sessions-list">
+            <div class="card radar-card">
+              <h3>Tension Radar</h3>
+              <div id="tension-radar" class="radar-container">
+                <div class="empty-state">
+                  <p>Scanning for contradictions...</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card activity-card">
+              <h3>Agent Activity</h3>
+              <div id="activity-feed" class="activity-feed">
                 <div class="skeleton skeleton-row"></div>
                 <div class="skeleton skeleton-row" style="width:80%"></div>
                 <div class="skeleton skeleton-row" style="width:70%"></div>
               </div>
             </div>
 
-            <div class="card">
-              <h3>Projects</h3>
+            <div class="card projects-card">
+              <h3>Active Projects</h3>
               <div id="projects-list" class="projects-list">
                 <div class="skeleton skeleton-row"></div>
                 <div class="skeleton skeleton-row" style="width:60%"></div>
@@ -162,12 +177,11 @@
             </div>
 
             <div class="card">
-              <h3>Top Topics</h3>
+              <h3>Knowledge Density</h3>
               <div id="topics-cloud" class="topics-cloud">
                 <div class="skeleton" style="width:60px;height:24px"></div>
                 <div class="skeleton" style="width:80px;height:24px"></div>
                 <div class="skeleton" style="width:50px;height:24px"></div>
-                <div class="skeleton" style="width:90px;height:24px"></div>
               </div>
             </div>
           </div>

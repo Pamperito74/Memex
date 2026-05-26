@@ -116,9 +116,24 @@ async function loadDashboard() {
   state.stats = stats;
 
   document.getElementById('stat-sessions').textContent = stats.totalSessions;
-  document.getElementById('stat-projects').textContent = stats.projects.length;
-  document.getElementById('stat-topics').textContent = stats.totalTopics;
   document.getElementById('sidebar-sessions').textContent = stats.totalSessions;
+
+  // Load ledger stats for health
+  try {
+    const ledger = await api.get('/assertions');
+    const totalAssertions = ledger.total || 0;
+    const confidence = totalAssertions > 0 
+      ? Math.round((ledger.assertions.reduce((sum, a) => sum + a.confidence, 0) / totalAssertions) * 100) 
+      : 0;
+
+    document.getElementById('stat-confidence').textContent = `${confidence}%`;
+    
+    // Tensions
+    const tensionsData = await api.get('/assertions?status=quarantined');
+    document.getElementById('stat-tensions').textContent = tensionsData.total || 0;
+  } catch (e) {
+    console.warn('Failed to load ledger stats:', e);
+  }
 
   // Load projects
   const projectsHtml = stats.projects
@@ -145,11 +160,45 @@ async function loadDashboard() {
 
   document.getElementById('topics-cloud').innerHTML = topicsHtml || '<div class="empty-state">No topics</div>';
 
-  // Load recent sessions
-  await loadRecentSessions();
+  // Load recent activity
+  await loadActivityFeed();
 
-  // Load AgentBridge status
-  await loadBridgeStatus();
+  // Load velocity
+  await loadLearningVelocity();
+}
+
+async function loadActivityFeed() {
+  const feed = document.getElementById('activity-feed');
+  try {
+    const projectsData = await api.get('/projects');
+    const allSessions = (await Promise.all(
+      projectsData.projects.slice(0, 3).map(async (proj) => {
+        const sessionsData = await api.get(`/sessions/${proj.name}?limit=5`);
+        return sessionsData.sessions.map(s => ({ ...s, project: proj.name }));
+      })
+    )).flat();
+
+    allSessions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    feed.innerHTML = allSessions.slice(0, 10).map(s => `
+      <div class="activity-item">
+        <span class="activity-time">${esc(s.date)}</span>
+        <span class="activity-text">Agent captured session in <strong>${esc(s.project)}</strong>: ${esc(s.summary)}</span>
+      </div>
+    `).join('');
+  } catch {
+    feed.innerHTML = '<div class="empty-state">No activity found</div>';
+  }
+}
+
+async function loadLearningVelocity() {
+  // Placeholder implementation
+  document.getElementById('stat-velocity-rate').textContent = '+2.4';
+  document.getElementById('velocity-chart').innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:2px;height:40px;width:100%">
+      ${[20, 30, 15, 40, 55, 35, 60].map(h => `<div style="flex:1;background:var(--accent);height:${h}%;border-radius:1px;opacity:0.6"></div>`).join('')}
+    </div>
+  `;
 }
 
 async function loadBridgeStatus() {

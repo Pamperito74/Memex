@@ -300,6 +300,21 @@ function createLedger(getDbFn) {
   }
 
   // -------------------------------------------------------------------------
+  // resolveTension
+  // -------------------------------------------------------------------------
+  function resolveTension(aId, bId, resolution = 'manual') {
+    const db = getDbFn();
+    const ts = now();
+    const result = db.prepare(
+      `UPDATE tension_pairs SET resolved_at = ?, resolution = ? WHERE a_id = ? AND b_id = ? AND resolved_at IS NULL`
+    ).run(ts, resolution, aId, bId);
+    const result2 = db.prepare(
+      `UPDATE tension_pairs SET resolved_at = ?, resolution = ? WHERE a_id = ? AND b_id = ? AND resolved_at IS NULL`
+    ).run(ts, resolution, bId, aId);
+    return (result.changes + result2.changes) > 0;
+  }
+
+  // -------------------------------------------------------------------------
   // setCounterfactualWeight
   // -------------------------------------------------------------------------
   function setCounterfactualWeight(id, value) {
@@ -374,6 +389,33 @@ function createLedger(getDbFn) {
     }
 
     return { action: 'created', id: newId, negations: negationIds };
+  }
+
+  // -------------------------------------------------------------------------
+  // adjustConfidence — event-driven confidence adjustment (#78)
+  // Adjusts assertion confidence based on outcome signals
+  // -------------------------------------------------------------------------
+  function adjustConfidence(assertionId, { signalSource, score, delta } = {}) {
+    const db = getDbFn();
+    const row = db.prepare('SELECT confidence, quorum_count FROM assertions WHERE id = ?').get(assertionId);
+    if (!row) return null;
+
+    let adjustment = 0;
+    if (delta !== undefined) {
+      adjustment = delta;
+    } else if (score !== undefined) {
+      adjustment = (score - 0.5) * 0.2;
+    } else if (signalSource === 'post_hoc') {
+      adjustment = 0.05;
+    } else if (signalSource === 'citation') {
+      adjustment = 0.1;
+    } else if (signalSource === 'user') {
+      adjustment = 0.15;
+    }
+
+    const newConfidence = Math.max(0.1, Math.min(1.0, row.confidence + adjustment));
+    db.prepare('UPDATE assertions SET confidence = ? WHERE id = ?').run(newConfidence, assertionId);
+    return { previous: row.confidence, new: newConfidence, adjustment };
   }
 
   // -------------------------------------------------------------------------
@@ -456,6 +498,36 @@ function createLedger(getDbFn) {
     return selected;
   }
 
+  // -------------------------------------------------------------------------
+  // semanticRecall
+  // -------------------------------------------------------------------------
+  async function semanticRecall(meaning, { plane, limit = 10, threshold = 0.3 } = {}) {
+    try {
+      const VectorSearch = require('./vector-search');
+      const vs = new VectorSearch();
+      if (typeof vs.initialize === 'function') await vs.initialize();
+      const results = await vs.search(meaning, { limit: limit * 2, minSimilarity: threshold });
+      if (!results.results || results.results.length === 0) return [];
+
+      // Filter to assertion IDs and fetch from DB
+      const db = getDbFn();
+      const assertions = [];
+      for (const r of results.results) {
+        if (r.assertion_id || (r.id && r.id.startsWith('a_'))) {
+          const aid = r.assertion_id || r.id;
+          const a = db.prepare('SELECT * FROM assertions WHERE id = ?').get(aid);
+          if (a && (plane ? a.plane === plane : true)) {
+            assertions.push({ ...a, similarity: r.similarity ?? r.score ?? 0 });
+          }
+        }
+        if (assertions.length >= limit) break;
+      }
+      return assertions;
+    } catch {
+      return [];
+    }
+  }
+
   return {
     createAssertion,
     reinforceAssertion,
@@ -467,12 +539,15 @@ function createLedger(getDbFn) {
     queryActiveByPlane,
     queryByClaim,
     queryTensions,
+    resolveTension,
     setCounterfactualWeight,
     markVerified,
     stats,
     ingest,
     rankActive,
     selectForContext,
+    semanticRecall,
+    adjustConfidence,
   };
 }
 

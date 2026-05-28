@@ -106,13 +106,60 @@ function main() {
   }
 }
 
+function writeAgentConfig(agentName) {
+  const agents = {
+    claude: { configPath: path.join(process.env.HOME || '/root', '.claude', 'mcp.json') },
+    opencode: { configPath: process.env.OPENCODE_CONFIG_PATH || path.join(process.env.HOME || '/root', '.config', 'opencode', 'mcp.json') },
+    aider: { configPath: path.join(process.env.HOME || '/root', '.aider', 'mcp.json') },
+    cursor: { configPath: path.join(process.env.HOME || '/root', '.cursor', 'mcp.json') },
+    windsurf: { configPath: path.join(process.env.HOME || '/root', '.windsurf', 'mcp.json') },
+  };
+
+  const agent = agents[agentName];
+  if (!agent) {
+    console.error(`Unknown agent: ${agentName}. Supported: ${Object.keys(agents).join(', ')}`);
+    process.exit(1);
+  }
+
+  const mcpConfig = {
+    mcpServers: {
+      engram: {
+        command: 'node',
+        args: [path.resolve(__dirname, 'mcp-server.mjs')],
+      },
+    },
+  };
+
+  try {
+    const dir = path.dirname(agent.configPath);
+    ensureDir(dir);
+
+    let existing = {};
+    if (fs.existsSync(agent.configPath)) {
+      existing = JSON.parse(fs.readFileSync(agent.configPath, 'utf8'));
+    }
+
+    existing.mcpServers = { ...existing.mcpServers, ...mcpConfig.mcpServers };
+    fs.writeFileSync(agent.configPath, JSON.stringify(existing, null, 2));
+    console.log(`Engram MCP configured for ${agentName} at ${agent.configPath}`);
+  } catch (e) {
+    console.error(`Failed to write config for ${agentName}: ${e.message}`);
+    process.exit(1);
+  }
+}
+
 if (require.main === module) {
   try {
-    main();
+    const agentIdx = process.argv.indexOf('--agent');
+    if (agentIdx >= 0 && process.argv[agentIdx + 1]) {
+      writeAgentConfig(process.argv[agentIdx + 1].toLowerCase());
+    } else {
+      main();
+    }
   } catch (e) {
     console.error(`Setup failed: ${e.message}`);
     process.exit(1);
   }
 }
 
-module.exports = { main };
+module.exports = { main, writeAgentConfig };

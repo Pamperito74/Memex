@@ -970,8 +970,69 @@ if (require.main === module) {
       }
 
       case 'setup': {
-        const { main: runSetup } = require('./setup');
-        runSetup();
+        const { spawnSync } = require('child_process');
+        const setupPath = path.join(__dirname, 'setup.js');
+        const args = process.argv.slice(3);
+        const result = spawnSync(process.execPath, [setupPath, ...args], { stdio: 'inherit' });
+        process.exit(result.status || 0);
+        break;
+      }
+
+      case 'ask': {
+        const query = process.argv.slice(3).join(' ');
+        if (!query) { console.error('Usage: engram ask <question>'); process.exit(1); }
+        try {
+          const ledger = require('./ledger');
+          const planes = Object.keys(ledger.stats().by_plane);
+          console.log(`\nQuery: ${query}`);
+          console.log('─'.repeat(60));
+          for (const plane of planes.slice(0, 3)) {
+            const assertions = ledger.queryByClaim(query, { plane, limit: 5 });
+            if (assertions.length > 0) {
+              console.log(`\n${plane}:`);
+              for (const a of assertions) {
+                const pct = typeof a.confidence === 'number' ? `${Math.round(a.confidence * 100)}%` : '—';
+                console.log(`  [${a.status}] ${a.claim} (${pct})`);
+              }
+            }
+          }
+          // Also show tensions
+          const tensions = ledger.queryTensions({ resolved: false });
+          if (tensions.length > 0) {
+            console.log(`\nUnresolved Tensions: ${tensions.length}`);
+            for (const t of tensions.slice(0, 5)) {
+              console.log(`  ↯ ${t.a_id} ↔ ${t.b_id}`);
+            }
+          }
+        } catch (e) {
+          console.error('Query failed:', e.message);
+        }
+        break;
+      }
+
+      case 'temporal':
+      case 'compact': {
+        try {
+          const ledger = require('./ledger');
+          const { analyzeChanges } = require('./transform');
+          const planes = Object.keys(ledger.stats().by_plane);
+          let total = 0;
+          for (const plane of planes) {
+            const assertions = ledger.queryActiveByPlane(plane, { limit: 1000 });
+            if (assertions.length === 0) continue;
+            const changes = analyzeChanges(assertions, { action: 'fossilize', maxAgeDays: 90 });
+            if (changes.length > 0) {
+              console.log(`${plane}: ${changes.length} fossilizable assertions`);
+              for (const c of changes) {
+                ledger.markFossilized(c.id, c.reason);
+                total++;
+              }
+            }
+          }
+          console.log(`\nFossilized ${total} low-signal assertions`);
+        } catch (e) {
+          console.error('Compaction failed:', e.message);
+        }
         break;
       }
 
@@ -989,12 +1050,14 @@ if (require.main === module) {
         console.log('Usage: engram [command] [args]');
         console.log('');
         console.log('Commands:');
-        console.log('  setup              - Initialize data directory (~/.engram)');
+        console.log('  setup [--agent <name>] - Initialize data directory (optional: claude/opencode/cursor/aider/windsurf)');
         console.log('  remember [summary] - Save a session note');
         console.log('  start              - Start web dashboard (http://127.0.0.1:3000/)');
         console.log('  startup            - Load and display startup info');
         console.log('  search <query>     - Search across all projects (keyword)');
         console.log('  semantic <query>   - Semantic search by meaning (AI-powered)');
+        console.log('  ask <question>     - One-shot query against the assertion ledger');
+        console.log('  compact            - Fossilize low-signal assertions (temporal compaction)');
         console.log('  list               - List all projects');
         console.log('  quick <query>      - Quick answer from index');
         console.log('  content <file>     - Load specific content file');

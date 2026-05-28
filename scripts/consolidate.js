@@ -260,7 +260,7 @@ function startWatcher(options = {}) {
         ledger_verify: true,
         ledger_transform: true,
         counterfactual: true,
-        post_hoc: true,
+        post_hoc: false,
         auto_resolve: true,
       }, { onUpdate });
     } catch (e) {

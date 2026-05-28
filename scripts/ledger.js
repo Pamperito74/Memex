@@ -69,11 +69,7 @@ function getDb() {
         }
       }
     } catch (e) {
-      if (e.message && e.message.includes('no such table')) {
-        // Fresh database — no assertions table yet, that's fine
-      } else {
-        console.error('Integrity check error:', e.message);
-      }
+      console.error('Integrity check error:', e.message);
     }
   }
   return _db;

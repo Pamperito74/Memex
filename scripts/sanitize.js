@@ -3,7 +3,9 @@ const path = require('path');
 
 function sanitizePath(str) {
   if (typeof str !== 'string') return '';
-  return str.replace(/\.\.(\/|\\)/g, '').replace(/\0/g, '');
+  const cleaned = str.replace(/\.\.(\/|\\)/g, '').replace(/\0/g, '');
+  // Strip bare `..` segments (at boundaries)
+  return cleaned.replace(/(^|\/|\\)\.\.($|\/|\\)/g, '$1$2');
 }
 
 function sanitizeProject(name) {
@@ -37,10 +39,9 @@ function createDbBackup(engramPath, dbPath) {
   const fs = require('fs');
   const { backupDir, timestamp } = getBackupPath(engramPath);
   fs.mkdirSync(backupDir, { recursive: true });
+  if (!fs.existsSync(dbPath)) return null;
   const backupFile = path.join(backupDir, `engram.db.${timestamp}.bak`);
-  if (fs.existsSync(dbPath)) {
-    fs.copyFileSync(dbPath, backupFile);
-  }
+  fs.copyFileSync(dbPath, backupFile);
   return backupFile;
 }
 

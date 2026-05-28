@@ -1022,7 +1022,7 @@ if (require.main === module) {
 
           // Auto-backup before destructive operation
           const backupFile = createDbBackup(engramPath, dbPath);
-          console.log(`Backed up to ${backupFile}`);
+          if (backupFile) console.log(`Backed up to ${backupFile}`);
 
           const { analyzeChanges } = require('./transform');
           const planes = Object.keys(ledger.stats().by_plane);

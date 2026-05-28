@@ -15,6 +15,12 @@ describe('sanitizePath', () => {
     assert.strictEqual(sanitizePath('..\\..\\windows\\system32'), 'windows\\system32');
   });
 
+  it('strips bare .. segments', () => {
+    assert.strictEqual(sanitizePath('/foo/../bar'), '/foo/bar');
+    assert.strictEqual(sanitizePath('foo/..'), 'foo/');
+    assert.strictEqual(sanitizePath('..'), '');
+  });
+
   it('strips null bytes', () => {
     assert.strictEqual(sanitizePath('file\0.txt'), 'file.txt');
   });

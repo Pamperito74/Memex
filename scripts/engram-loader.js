@@ -1014,6 +1014,16 @@ if (require.main === module) {
       case 'compact': {
         try {
           const ledger = require('./ledger');
+          const { resolveEngramPath } = require('./paths');
+          const { createDbBackup } = require('./sanitize');
+          const engramPath = resolveEngramPath(__dirname);
+          const db = ledger.getDb();
+          const dbPath = db.name;
+
+          // Auto-backup before destructive operation
+          const backupFile = createDbBackup(engramPath, dbPath);
+          console.log(`Backed up to ${backupFile}`);
+
           const { analyzeChanges } = require('./transform');
           const planes = Object.keys(ledger.stats().by_plane);
           let total = 0;
@@ -1030,6 +1040,14 @@ if (require.main === module) {
             }
           }
           console.log(`\nFossilized ${total} low-signal assertions`);
+
+          // VACUUM to reclaim space after deletes
+          if (total > 0) {
+            console.log('Running VACUUM...');
+            db.pragma('vacuum');
+            console.log('Running REINDEX...');
+            db.pragma('reindex');
+          }
         } catch (e) {
           console.error('Compaction failed:', e.message);
         }

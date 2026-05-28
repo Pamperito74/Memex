@@ -26,6 +26,55 @@ function getDb() {
     _db.pragma('journal_mode = WAL');
     _db.pragma('busy_timeout = 5000');
     _db.pragma('foreign_keys = ON');
+
+    try {
+      const row = _db.pragma('integrity_check', { simple: true });
+      if (row !== 'ok') {
+        console.error('Database integrity check failed:', row);
+        const { createDbBackup } = require('./sanitize');
+        const backupFile = createDbBackup(ENGRAM_PATH, DB_PATH);
+        console.error(`Backup saved to ${backupFile}. Attempting recovery...`);
+        _db.close();
+        _db = null;
+        const backupPath = path.join(ENGRAM_PATH, '.cache', 'backups');
+        const backups = fs.readdirSync(backupPath)
+          .filter(f => f.endsWith('.bak'))
+          .sort()
+          .reverse();
+        if (backups.length > 0) {
+          const recentBackup = path.join(backupPath, backups[0]);
+          fs.copyFileSync(recentBackup, DB_PATH);
+          _db = new Database(DB_PATH);
+          _db.pragma('journal_mode = WAL');
+          _db.pragma('busy_timeout = 5000');
+          _db.pragma('foreign_keys = ON');
+          const retry = _db.pragma('integrity_check', { simple: true });
+          if (retry !== 'ok') {
+            console.error('Backup also corrupt. Creating fresh database.');
+            _db.close();
+            fs.unlinkSync(DB_PATH);
+            _db = new Database(DB_PATH);
+            _db.pragma('journal_mode = WAL');
+            _db.pragma('busy_timeout = 5000');
+            _db.pragma('foreign_keys = ON');
+          }
+        } else {
+          console.error('No backups found. Creating fresh database.');
+          _db.close();
+          fs.unlinkSync(DB_PATH);
+          _db = new Database(DB_PATH);
+          _db.pragma('journal_mode = WAL');
+          _db.pragma('busy_timeout = 5000');
+          _db.pragma('foreign_keys = ON');
+        }
+      }
+    } catch (e) {
+      if (e.message && e.message.includes('no such table')) {
+        // Fresh database — no assertions table yet, that's fine
+      } else {
+        console.error('Integrity check error:', e.message);
+      }
+    }
   }
   return _db;
 }

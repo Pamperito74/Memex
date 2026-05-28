@@ -153,35 +153,7 @@ async function consolidate(tasks, options = {}) {
   }
 
   if (tasks.post_hoc) {
-    log('Running post-hoc feedback scoring...');
-    try {
-      const ledger = require('./ledger');
-      const db = ledger.getDb();
-      const { scoreReply } = require('./capture');
-      const sessions = db.prepare(
-        `SELECT DISTINCT sl.session_id FROM selection_log sl
-         LEFT JOIN assertion_outcomes ao ON ao.session_id = sl.session_id AND ao.signal_source = 'post_hoc'
-         WHERE ao.id IS NULL
-         LIMIT 20`
-      ).all();
-      if (sessions.length > 0) {
-        for (const { session_id } of sessions) {
-          try {
-            const result = await scoreReply(session_id, '', { db, embedFn: null });
-            if (result && result.scored > 0) {
-              log(`  Scored ${result.scored} assertions for session ${session_id}`);
-            }
-          } catch (e) {
-            log(`  Post-hoc scoring failed for ${session_id}: ${e.message}`);
-          }
-        }
-      } else {
-        log('  No pending sessions to score');
-      }
-      if (onUpdate) onUpdate('engram://stats');
-    } catch (e) {
-      log('Post-hoc feedback failed: ' + e.message);
-    }
+    log('Skipping post-hoc scoring — requires reply text, not available in consolidation sweep. Trigger via capture module directly.');
   }
 
   if (tasks.auto_resolve) {
@@ -239,7 +211,19 @@ async function consolidate(tasks, options = {}) {
   persistConsolidationStats({ tasks, onUpdate });
 }
 
-function persistConsolidationStats({ tasks, onUpdate } = {}) {
+function checkDiskSpace() {
+  try {
+    const { checkDiskUsage } = require('./sanitize');
+    const result = checkDiskUsage(ENGRAM_PATH, 500, 2048);
+    for (const w of result.warnings || []) log(w);
+    for (const e of result.errors || []) log(e);
+    return result.ok !== false;
+  } catch {
+    return true;
+  }
+}
+
+function persistConsolidationStats({ tasks } = {}) {
   try {
     const fs = require('fs');
     const statsPath = path.join(ENGRAM_PATH, '.cache', 'consolidation.json');
@@ -262,6 +246,10 @@ function startWatcher(options = {}) {
       log('Skipping — on battery. Set ENGRAM_CONSOLIDATE_BATTERY_OK=true to override.');
       return;
     }
+    if (!checkDiskSpace()) {
+      log('Disk space check failed — skipping consolidation run.');
+      return;
+    }
     lastRunTime = now;
     try {
       await consolidate({
@@ -272,7 +260,7 @@ function startWatcher(options = {}) {
         ledger_verify: true,
         ledger_transform: true,
         counterfactual: true,
-        post_hoc: true,
+        post_hoc: false,
         auto_resolve: true,
       }, { onUpdate });
     } catch (e) {
@@ -315,6 +303,11 @@ if (require.main === module) {
     tasks.counterfactual = true;
     tasks.post_hoc = true;
     tasks.auto_resolve = true;
+  }
+
+  if (!checkDiskSpace()) {
+    console.error('[consolidate] Disk space check failed — aborting.');
+    process.exit(1);
   }
 
   if (isWatcher) {

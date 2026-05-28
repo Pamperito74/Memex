@@ -459,6 +459,29 @@ npm run convert-msgpack
 
 ---
 
+## [5.0.1] — 2026-05-28
+
+### 🛡️ Security & Robustness Hardening (Issue #81)
+
+**Focus:** Close production hardening gaps — input sanitization, SQLite corruption recovery, MCP rate limiting, auto-backup before destructive ops, and disk space monitoring.
+
+### Added
+
+- **Centralized sanitizer** (`scripts/sanitize.js`) — path traversal protection, project name sanitization, limit clamping, string truncation, ID validation, DB backup/restore, disk usage check
+- **SQLite integrity check on startup** (`ledger.js getDb()`) — runs `PRAGMA integrity_check`, auto-recovers from backup on corruption, falls back to fresh DB if both corrupt
+- **Auto-backup before compaction** (`engram compact`) — snapshots `engram.db` to `.cache/backups/` with timestamp before fossilizing assertions
+- **VACUUM + REINDEX after compaction** — reclaims space and defragments DB after large deletes
+- **Disk usage monitoring** (`consolidate.js`) — warns if `.cache/` > 500MB (soft limit), errors if > 2GB (hard limit); checked before consolidation runs
+- **MCP tool rate limiting** (`mcp-server.mjs`) — per-session counter (default 60 calls/min, configurable via `ENGRAM_MCP_RATE_LIMIT`)
+- **Read-only mode** (`ENGRAM_READONLY=true`) — blocks mutation tools (`remember`, `ledger_ingest`, `rebuild_index`, `receive_handoff`, `session_append_event`)
+- **Input sanitization on all MCP tool calls** — sanitizes project/path params, truncates oversized strings, clamps numeric limits
+
+### Fixed
+
+- **Post-hoc scoring** — no longer called with empty reply text in consolidation sweep (was producing meaningless 0-score entries)
+- **Unused `onUpdate` param** — removed from `persistConsolidationStats()` (lint warning)
+- **Misleading `tensions_found` field** — removed from `receiveHandoff` stats (always 0; `tension_count` is the real metric)
+
 ## Links
 
 - **Repository:** https://github.com/tinydarkforge/engram

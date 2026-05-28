@@ -788,7 +788,7 @@ function receiveHandoff(contextBlob) {
     return { error: 'context_blob is required', injected: false };
   }
 
-  const stats = { injected: true, facts_extracted: 0, facts_loaded: 0, tensions_found: 0, token_used: Math.ceil(contextBlob.length / 4) };
+  const stats = { injected: true, facts_extracted: 0, facts_loaded: 0, token_used: Math.ceil(contextBlob.length / 4) };
   stats.tension_count = (contextBlob.match(/tension/i) || []).length;
 
   try {

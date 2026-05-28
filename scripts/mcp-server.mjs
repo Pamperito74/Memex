@@ -96,6 +96,53 @@ const server = new Server(
 
 const resourceSubscriptions = new Set();
 
+// ─────────────────────────────────────────────────────────────
+// MCP Rate Limiting
+// ─────────────────────────────────────────────────────────────
+const _callWindows = new Map();
+const MCP_RATE_LIMIT = parseInt(process.env.ENGRAM_MCP_RATE_LIMIT || '60', 10);
+const MCP_RATE_WINDOW_MS = 60000;
+
+function checkMcpRateLimit(sessionId) {
+  const now = Date.now();
+  let entry = _callWindows.get(sessionId);
+  if (!entry || now - entry.start > MCP_RATE_WINDOW_MS) {
+    entry = { start: now, count: 0 };
+    _callWindows.set(sessionId, entry);
+  }
+  entry.count += 1;
+  return entry.count <= MCP_RATE_LIMIT;
+}
+
+// Periodic cleanup
+setInterval(() => {
+  const now = Date.now();
+  _callWindows.forEach((entry, key) => {
+    if (now - entry.start > MCP_RATE_WINDOW_MS) _callWindows.delete(key);
+  });
+}, MCP_RATE_WINDOW_MS * 2).unref();
+
+// ─────────────────────────────────────────────────────────────
+// Read-Only Mode
+// ─────────────────────────────────────────────────────────────
+const ENGRAM_READONLY = process.env.ENGRAM_READONLY === 'true';
+const MUTATION_TOOLS = new Set([
+  'remember', 'rebuild_index', 'ledger_ingest',
+  'receive_handoff', 'session_append_event',
+]);
+
+function checkReadonly(toolName) {
+  if (ENGRAM_READONLY && MUTATION_TOOLS.has(toolName)) {
+    return { error: `Read-only mode: ${toolName} is disabled` };
+  }
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Input Sanitization
+// ─────────────────────────────────────────────────────────────
+const { sanitizeProject, sanitizePath, clampLimit, truncateString, isValidId } = require('./sanitize.js');
+
 // List available tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -556,6 +603,36 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 // Handle tool calls
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
+
+  // Rate limiting by session (use `sessionId` from meta if available)
+  const sessionId = request?.params?._meta?.sessionId || 'default';
+  if (!checkMcpRateLimit(sessionId)) {
+    return {
+      content: [{ type: 'text', text: JSON.stringify({ error: 'Rate limit exceeded' }) }],
+      isError: true,
+    };
+  }
+
+  // Read-only gate
+  const readonlyErr = checkReadonly(name);
+  if (readonlyErr) {
+    return {
+      content: [{ type: 'text', text: JSON.stringify(readonlyErr) }],
+      isError: true,
+    };
+  }
+
+  // Sanitize common string arguments
+  if (args) {
+    if (args.project) args.project = sanitizeProject(args.project);
+    if (args.plane) args.plane = sanitizePath(args.plane);
+    if (args.session_id) args.session_id = sanitizePath(args.session_id);
+    if (args.summary) args.summary = truncateString(args.summary, 2000);
+    if (args.claim) args.claim = truncateString(args.claim, 2000);
+    if (args.context_blob) args.context_blob = truncateString(args.context_blob, 50000);
+    if (args.limit !== undefined) args.limit = clampLimit(args.limit, 10, 100);
+    if (args.budget !== undefined) args.budget = clampLimit(args.budget, 500, 50000);
+  }
 
   let result;
 

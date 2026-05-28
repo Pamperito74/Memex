@@ -606,6 +606,85 @@ app.post('/api/feedback', requireApiKey, (req, res) => {
   }
 });
 
+/**
+ * GET /api/dashboard/tensions
+ * Live tension radar data — unresolved tensions with detected_at
+ */
+app.get('/api/dashboard/tensions', (req, res) => {
+  try {
+    const db = getLedgerDb();
+    if (!db) return res.json({ tensions: [], total: 0 });
+    const tensions = db.prepare(`
+      SELECT tp.a_id, tp.b_id, tp.detected_at,
+             a.claim AS a_claim, b.claim AS b_claim,
+             a.plane AS a_plane
+      FROM tension_pairs tp
+      LEFT JOIN assertions a ON a.id = tp.a_id
+      LEFT JOIN assertions b ON b.id = tp.b_id
+      WHERE tp.resolved_at IS NULL
+      ORDER BY tp.detected_at DESC
+      LIMIT 50
+    `).all();
+    res.json({ tensions, total: tensions.length });
+  } catch (e) {
+    if (e.message && e.message.includes('no such table')) {
+      return res.json({ tensions: [], total: 0 });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/dashboard/velocity
+ * Learning velocity — facts/day over time from assertion_outcomes
+ */
+app.get('/api/dashboard/velocity', (req, res) => {
+  try {
+    const db = getLedgerDb();
+    if (!db) return res.json({ rate: 0, history: [], total_facts: 0 });
+    const totalFacts = db.prepare('SELECT COUNT(*) AS n FROM assertions').get().n || 0;
+    const oldest = db.prepare('SELECT MIN(created_at) AS oldest FROM assertions').get();
+    if (!oldest || !oldest.oldest) {
+      return res.json({ rate: 0, history: [], total_facts: totalFacts });
+    }
+    const daysSince = Math.max(1, (Date.now() - new Date(oldest.oldest).getTime()) / (1000 * 60 * 60 * 24));
+    const rate = +(totalFacts / daysSince).toFixed(1);
+
+    const history = db.prepare(`
+      SELECT DATE(created_at) AS day, COUNT(*) AS count
+      FROM assertions
+      WHERE created_at >= datetime('now', '-30 days')
+      GROUP BY DATE(created_at)
+      ORDER BY day ASC
+    `).all();
+
+    res.json({ rate, history, total_facts: totalFacts });
+  } catch (e) {
+    if (e.message && e.message.includes('no such table')) {
+      return res.json({ rate: 0, history: [], total_facts: 0 });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/dashboard/consolidation
+ * Consolidation status — last run time, tasks
+ */
+app.get('/api/dashboard/consolidation', (req, res) => {
+  try {
+    const fs = require('fs');
+    const statsPath = path.join(ENGRAM_PATH, '.cache', 'consolidation.json');
+    if (fs.existsSync(statsPath)) {
+      const stats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
+      return res.json(stats);
+    }
+    res.json({ last_run_at: null, tasks_run: [] });
+  } catch {
+    res.json({ last_run_at: null, tasks_run: [] });
+  }
+});
+
 // ─────────────────────────────────────────────────────────────
 // AgentBridge Event Consumer
 // ─────────────────────────────────────────────────────────────
@@ -735,8 +814,27 @@ if (require.main === module) {
     setTimeout(() => process.exit(0), 10000).unref();
   }
 
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT', () => shutdown('SIGINT'));
+  // Start background consolidation
+  let consolidationTimer = null;
+  try {
+    const { consolidate } = require('./consolidate');
+    consolidate({ bloom: false, manifest: false, ledger_scan: true, ledger_verify: true, counterfactual: true, post_hoc: true, auto_resolve: true }).catch(() => {});
+    consolidationTimer = setInterval(() => {
+      consolidate({ bloom: false, manifest: false, ledger_scan: true, ledger_verify: true, counterfactual: true, post_hoc: true, auto_resolve: true }).catch(() => {});
+    }, 300000);
+    consolidationTimer.unref();
+  } catch (e) {
+    console.warn('Consolidation not available:', e.message);
+  }
+
+  process.on('SIGTERM', () => {
+    if (consolidationTimer) clearInterval(consolidationTimer);
+    shutdown('SIGTERM');
+  });
+  process.on('SIGINT', () => {
+    if (consolidationTimer) clearInterval(consolidationTimer);
+    shutdown('SIGINT');
+  });
 }
 
 module.exports = app;

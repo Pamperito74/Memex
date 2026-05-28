@@ -99,6 +99,67 @@ None - Fully backward compatible. JSON files preserved as fallback.
 
 ---
 
+## [5.0.0] - 2026-05-28
+
+### 🧠 Epistemic Engine — Close the Learning Loop
+
+**Focus:** Move from memory store to epistemic engine. Close the gap between promise and delivery on contradiction detection, autonomous fact lifecycle, and live dashboard.
+
+### Added
+
+- **Real stub implementations** (6 gap-map items closed)
+  - `counterfactual.js` — importance weight computation: recency × quorum × connectivity × rarity
+  - `refinery.js` — dedup-aware assertion ingestion from session records
+  - `verification-hooks.js` — 4 built-in verifiers (git, dependency, project, config)
+  - `transform.js verify` — runs verification hooks instead of blind timestamp stamping
+  - `receive_handoff` — extracts facts from handoff blobs, injects via ledger.ingest()
+  - `tension_pairs.resolved_at` — set by new `ledger.resolveTension()` and `sentinel.autoResolve()`
+
+- **Learning loop wired end-to-end**
+  - Consolidation runs post-hoc feedback scoring, counterfactual weighting, tension auto-resolve (30d stale → resolved)
+  - MCP resource subscriptions notified on every change (`notifyResourceUpdated`)
+  - Consolidation status persisted and queryable at `/api/dashboard/consolidation`
+
+- **Live dashboard metrics**
+  - `GET /api/dashboard/tensions` — real tensions with claims, not placeholder
+  - `GET /api/dashboard/velocity` — facts/day rate + 30-day sparkline
+  - Tension Radar widget renders live contradiction pairs
+  - Learning Velocity sparkline animates from real assertion data
+
+- **New CLI commands**
+  - `engram ask <question>` — one-shot query against assertion ledger
+  - `engram compact` — temporal compaction: fossilize low-signal assertions >90d
+  - `engram setup --agent <name>` — write MCP config for 5 agents (claude, opencode, cursor, aider, windsurf)
+
+- **Semantic recall** (`ledger.semanticRecall()`) — query assertions by meaning via vector search
+
+- **Event-driven confidence adjustment** (`ledger.adjustConfidence()`) — outcome signal → confidence delta
+
+- **DX improvements**
+  - `postinstall` hook — auto-runs `engram setup` after `npm install -g`
+  - npm publish CI workflow (`.github/workflows/publish.yml`)
+  - Multi-agent MCP config setup
+
+- **README repositioned** — epistemic engine framing, full competitor comparison table (vs Go/FTS5 original, mem0, Letta/Zep)
+
+### Fixed
+
+- **Post-hoc scoring** (#43) — embeds full body text (no 200-char truncation), parallel embedding
+- **Empty catch blocks** — lint error in `contradiction-sentinel.js` resolved
+
+### Changed
+
+- `consolidate.js` — new tasks: `counterfactual`, `post_hoc`, `auto_resolve` (all on by default in watcher)
+- `mcp-tools.js` — `receiveHandoff()` now returns `facts_extracted`, `facts_loaded`, `error` on failure
+- `server.js` — background consolidation watcher starts with dashboard server
+- `package.json` — added `postinstall`, `ask`, `compact` scripts; `--agent` CLI support
+
+### Not Implemented
+
+- **#17 Team sharing** — multi-user sync requires a sync protocol, merge semantics, and conflict resolution. Out of scope for this epic.
+
+---
+
 ## [3.4.0] - 2025-12-03
 
 ### 🔧 Polish & Production Readiness

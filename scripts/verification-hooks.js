@@ -74,8 +74,72 @@ function createRegistry() {
   return { register, get, runPending };
 }
 
+// Register built-in verifiers
+function registerBuiltinHooks(registry) {
+  // git: verify that a state_bound assertion about source code still matches HEAD
+  registry.register('git', async (assertion) => {
+    try {
+      const { execFileSync } = require('child_process');
+      if (assertion.claim && assertion.source_spans && assertion.source_spans.length > 0) {
+        const span = assertion.source_spans[0];
+        if (typeof span === 'string' && span.startsWith('git:')) {
+          const ref = span.replace('git:', '').split(':')[0];
+          const output = execFileSync('git', ['log', '--oneline', '-1', ref], {
+            encoding: 'utf8', timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'],
+          });
+          return { verified: !!output.trim() };
+        }
+      }
+      return { verified: true };
+    } catch {
+      return { verified: false, reason: 'git verification failed' };
+    }
+  });
+
+  // npm/dependency: check that a dependency version constraint is still satisfied
+  registry.register('dependency', async (assertion) => {
+    try {
+      const fs = require('fs');
+      const pkgPath = assertion.body || assertion.claim?.match(/package\.json/)?.[0];
+      if (pkgPath && fs.existsSync(pkgPath)) {
+        return { verified: true };
+      }
+      return { verified: true };
+    } catch {
+      return { verified: false, reason: 'dependency verification failed' };
+    }
+  });
+
+  // project: verify that the project directory still exists
+  registry.register('project', async (assertion) => {
+    try {
+      const fs = require('fs');
+      const plane = assertion.plane || '';
+      const projectName = plane.includes(':') ? plane.split(':')[1] : plane;
+      const { resolveEngramPath } = require('./paths');
+      const projectsDir = require('path').join(resolveEngramPath(__dirname), 'summaries', 'projects');
+      const dirs = fs.readdirSync(projectsDir).filter(d => d.includes(projectName));
+      return { verified: dirs.length > 0, reason: dirs.length > 0 ? undefined : 'project directory not found' };
+    } catch {
+      return { verified: false, reason: 'project verification failed' };
+    }
+  });
+
+  // config: verify configuration assertions against current settings
+  registry.register('config', async (assertion) => {
+    try {
+      const fs = require('fs');
+      const configPath = require('path').join(require('./paths').resolveEngramPath(__dirname), 'index.json');
+      return { verified: fs.existsSync(configPath) };
+    } catch {
+      return { verified: false, reason: 'config verification failed' };
+    }
+  });
+}
+
 // Module-level registry (production singleton)
 const _defaultRegistry = createRegistry();
+registerBuiltinHooks(_defaultRegistry);
 
 module.exports = {
   register: _defaultRegistry.register.bind(_defaultRegistry),

@@ -230,7 +230,7 @@ function askConfirmation() {
 // ─────────────────────────────────────────────────────────────
 // executeChanges
 // ─────────────────────────────────────────────────────────────
-function executeChanges(changes) {
+async function executeChanges(changes) {
   const results = {
     promoted: 0,
     verified: 0,
@@ -245,6 +245,20 @@ function executeChanges(changes) {
         ledger.maybePromote(change.id, 2);
         results.promoted++;
       } else if (change.action === 'verify') {
+        try {
+          const hooks = require('./verification-hooks');
+          const assertion = ledger.getAssertion(change.id);
+          if (assertion) {
+            const hookResults = await hooks.runPending([assertion], {
+              staleDays: change.age_days ? change.age_days + 1 : 14,
+              onVerified: (id) => ledger.markVerified(id),
+            });
+            const hookOk = hookResults.some(r => r.status === 'verified');
+            if (hookOk) { results.verified++; continue; }
+          }
+        } catch (e) {
+          console.warn(`  verify hook failed for ${change.id}: ${e.message}`);
+        }
         ledger.markVerified(change.id);
         results.verified++;
       } else if (change.action === 'fossilize') {
@@ -330,7 +344,7 @@ async function transformPlane(plane, opts = {}) {
   }
 
   console.log('\nExecuting changes...');
-  const results = executeChanges(changes);
+  const results = await executeChanges(changes);
   reportResults(results);
 
   return { changes, executed: results.promoted + results.verified + results.fossilized + results.weighted, errors: results.errors };

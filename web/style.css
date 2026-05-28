@@ -641,6 +641,25 @@ main {
   color: var(--warm);
 }
 
+/* Tension Radar */
+.radar-container { min-height:80px; }
+.tension-list { display:flex;flex-direction:column;gap:var(--space-2); }
+.tension-item {
+  display:flex;flex-direction:column;gap:var(--space-1);
+  padding:var(--space-2);background:var(--surface2);border-radius:var(--radius);
+  border-left:2px solid var(--danger,#ef4444);
+}
+.tension-claims { display:flex;align-items:center;gap:var(--space-2); }
+.tension-claim { font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1; }
+.tension-vs { color:var(--danger,#ef4444);font-weight:700;font-size:14px;flex-shrink:0; }
+.tension-meta { font-size:10px;color:var(--text-muted); }
+.tension-more { text-align:center;font-size:11px;color:var(--accent);padding:var(--space-1); }
+.consolidation-badge {
+  display:inline-block;font-size:10px;font-weight:400;color:var(--text-muted);
+  margin-left:var(--space-2);padding:1px 6px;border-radius:var(--radius);
+  background:var(--surface2);vertical-align:middle;
+}
+
 /* Sessions List */
 .sessions-list {
   display: flex;

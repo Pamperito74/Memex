@@ -787,12 +787,71 @@ function receiveHandoff(contextBlob) {
   if (!contextBlob || typeof contextBlob !== 'string') {
     return { error: 'context_blob is required', injected: false };
   }
-  return {
-    injected: true,
-    facts_loaded: contextBlob.split('###').length - 1,
-    token_used: Math.ceil(contextBlob.length / 4),
-    tension_count: (contextBlob.match(/tension/i) || []).length,
-  };
+
+  const stats = { injected: true, facts_extracted: 0, facts_loaded: 0, tensions_found: 0, token_used: Math.ceil(contextBlob.length / 4) };
+  stats.tension_count = (contextBlob.match(/tension/i) || []).length;
+
+  try {
+    const ledger = require('./ledger');
+
+    // Extract facts from "### High Confidence Facts" section
+    const factsMatch = contextBlob.match(/### High Confidence Facts\n([\s\S]*?)(?=\n###|\n$|$)/);
+    if (factsMatch) {
+      const factsBlock = factsMatch[1].trim();
+      const factLines = factsBlock.split('\n').filter(l => l.trim().startsWith('- ') || l.trim().startsWith('* '));
+      stats.facts_extracted = factLines.length;
+
+      // Extract sections with claims for assertion creation
+      const claimMatches = contextBlob.matchAll(/- \*\*Claim:\*\* ([^\n]+)/g);
+      const projectMatch = contextBlob.match(/## Handoff Context: ([^\n]+)/);
+      const plane = projectMatch ? `project:${projectMatch[1].trim()}` : 'project:unknown';
+
+      for (const match of claimMatches) {
+        const claim = match[1].trim();
+        if (claim && claim.length > 5) {
+          try {
+            ledger.ingest({
+              plane,
+              class_: 'episodic',
+              claim,
+              body: null,
+              confidence: 0.5,
+              source_spans: [`handoff:${Date.now()}`],
+              staleness_model: 'flat',
+            });
+            stats.facts_loaded++;
+          } catch (e) {
+            // skip assertions that already exist (dedup handles it)
+          }
+        }
+      }
+
+      // If no explicit claims, extract from bullet points
+      if (stats.facts_loaded === 0 && stats.facts_extracted > 0) {
+        for (const line of factLines) {
+          const clean = line.replace(/^[-*]\s*/, '').trim();
+          if (clean && clean.length > 10) {
+            try {
+              ledger.ingest({
+                plane,
+                class_: 'episodic',
+                claim: clean.substring(0, 500),
+                body: null,
+                confidence: 0.5,
+                source_spans: [`handoff:${Date.now()}`],
+                staleness_model: 'flat',
+              });
+              stats.facts_loaded++;
+            } catch (e) { /* dedup handles */ }
+          }
+        }
+      }
+    }
+
+    return stats;
+  } catch (e) {
+    return { ...stats, error: e.message };
+  }
 }
 
 function sessionReplay(project, sessionId) {

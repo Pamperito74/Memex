@@ -49,8 +49,7 @@ async function scoreSession({ sessionId, replyText, db, embedFn }) {
 
   const rows = await Promise.all(picks.map(async (pick) => {
     const text = renderAssertion(pick);
-    const truncated = text.length > 200 ? text.slice(0, 200) : text;
-    const vec = await embedFn(truncated);
+    const vec = await embedFn(text); // full body text, no truncation
     const raw = cosineSimilarity(replyVec, vec);
     return {
       id: newId(),

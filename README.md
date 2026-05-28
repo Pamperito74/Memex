@@ -13,7 +13,9 @@
   <img src="web/engram-dashboard.png" alt="Engram Dashboard" width="720">
 </p>
 
-**Engram** is an autonomous memory and assertion ledger for AI coding agents. It persists engineering context across repositories, ranks facts by confidence and corroboration, surfaces contradictions, and exposes everything to Claude Code over MCP with real-time subscriptions. Unlike simple RAG, Engram actively **learns** — running background consolidation to refine its knowledge without user intervention.
+**Engram** is an **epistemic engine** for AI coding agents — not just memory. It persists facts with confidence, corroboration, and contradiction tracking across repositories, autonomously learns from outcomes, exposes everything over MCP, and replaces itself in your context window on a token budget.
+
+> **Epistemic engine** = contradiction detection + confidence-ranked retrieval + autonomous fact lifecycle + token-budgeted injection. Engram doesn't just store what you said — it tracks what's true, what conflicts, and what's worth remembering.
 
 ---
 
@@ -99,6 +101,12 @@ engram remember --interactive
 engram semantic "authentication work"
 engram search "oauth"
 
+# One-shot query against the assertion ledger
+engram ask "what do we know about authentication"   # new in v5
+
+# Temporal compaction — fossilize low-signal assertions
+engram compact   # new in v5
+
 # View status and ledger health
 engram status
 
@@ -106,26 +114,74 @@ engram status
 engram start   # → http://127.0.0.1:3000
 ```
 
-### MCP tools (available in Claude Code)
+### Dashboard API
 
-Engram exposes tools via MCP for session search, ledger ingestion, context selection, cross-project search, and agent handoff. Run `engram mcp` to start the MCP server.
+The dashboard exposes live metrics endpoints:
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/stats` | Session counts, projects, topic count |
+| `GET /api/dashboard/tensions` | Unresolved contradictions with claims |
+| `GET /api/dashboard/velocity` | Facts/day rate + 30-day sparkline data |
+| `GET /api/dashboard/consolidation` | Last consolidation run time and tasks |
+| `GET /api/assertions` | Paginated assertion browser |
+| `GET /api/assertions/:id` | Full detail with outcomes, lineage, feedback |
+
+### Background consolidation
+
+Engram runs periodic consolidation (every 5 min) to close the learning loop:
+
+```
+ledger_scan    →  Detect new contradictions (tensions)
+ledger_verify  →  Re-verify stale state_bound facts
+counterfactual →  Recompute importance weights
+post_hoc       →  Score assertion outcomes from sessions
+auto_resolve   →  Auto-resolve tensions older than 30 days
+ledger_transform → Promote/fossilize/weight assertions
+```
+
+Run a full cycle manually:
+```bash
+npm run consolidate:full   # --all including manifest + embeddings
+node scripts/consolidate.js --all
+```
+
+### MCP tools (available in Claude Code, OpenCode, Cursor, Aider, and Windsurf)
+
+Engram exposes tools via MCP for session search, ledger ingestion, context selection, semantic recall, cross-project search, and agent handoff. Run `engram mcp` to start the MCP server, or configure any agent:
+
+```bash
+engram setup --agent claude       # Claude Code
+engram setup --agent opencode     # OpenCode CLI
+engram setup --agent cursor       # Cursor IDE
+engram setup --agent aider        # Aider
+engram setup --agent windsurf     # Windsurf
+```
 
 ---
 
 ## Features
 
-| | Engram | mem0 | Letta / Zep |
-|---|---|---|---|
-| Local-first (no cloud) | Yes | No | No |
-| Assertion ledger (confidence, quorum, status) | Yes | No | No |
-| Contradiction detection | Yes | No | No |
-| MCP-native (Claude Code) | Yes | No | No |
-| Git-hook session capture | Yes | Partial | Partial |
-| Token-budgeted retrieval | Yes | No | No |
-| Semantic search (local ONNX) | Yes | Yes | Yes |
-| Cross-session diff | Yes | No | No |
-| Agent handoff | Yes | Limited | Limited |
-| MCP Resources with subscriptions | Yes | No | No |
+| | Engram | Gentleman-Programming/engram (Go) | mem0 | Letta / Zep |
+|---|---|---|---|---|
+| Local-first (no cloud) | Yes | Yes | No | No |
+| **Contradiction detection + auto-resolve** | **Yes** | No | No | No |
+| **Confidence-ranked retrieval** | **Yes** | No | No | No |
+| **Assertion ledger** (confidence, quorum, status) | **Yes** | No | No | No |
+| **Autonomous consolidation (learning loop)** | **Yes** | No | No | No |
+| **Post-hoc outcome scoring** | **Yes** | No | No | No |
+| **Counterfactual importance weighting** | **Yes** | No | No | No |
+| **Semantic recall** (by meaning, not keyword) | **Yes** | No | No | Yes |
+| **Temporal compaction** (fossilize low-signal) | **Yes** | No | No | No |
+| **Event-driven confidence adjustment** | **Yes** | No | No | No |
+| MCP-native (7+ agents) | Yes | No | No | No |
+| Git-hook session capture | Yes | Yes | Partial | Partial |
+| Token-budgeted retrieval | Yes | Yes | No | No |
+| Semantic search (local ONNX) | Yes | No | Yes | Yes |
+| Cross-session diff | Yes | No | No | No |
+| Agent handoff | Yes | No | Limited | Limited |
+| MCP Resources with subscriptions | Yes | No | No | No |
+| Live dashboard (tension radar, velocity, etc.) | Yes | No | No | No |
 
 ---
 

@@ -25,7 +25,7 @@ function createSentinel(getLedgerFn, getDb) {
       ).get(plane);
       return row ? row.last_scanned_at : null;
     } catch {
-      try { ensureTables(); } catch { }
+      try { ensureTables(); } catch (e) { /* table may already exist */ }
       return null;
     }
   }
@@ -122,6 +122,25 @@ function createSentinel(getLedgerFn, getDb) {
   return { scanPlane };
 }
 
+async function autoResolve(plane, { maxAgeDays = 30 } = {}) {
+  const ledger = require('./ledger');
+  const db = ledger.getDb();
+  const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
+
+  const staleTensions = db.prepare(`
+    SELECT a_id, b_id FROM tension_pairs
+    WHERE resolved_at IS NULL AND detected_at < ?
+  `).all(cutoff);
+
+  let resolved = 0;
+  for (const t of staleTensions) {
+    const ok = ledger.resolveTension(t.a_id, t.b_id, 'auto_resolved_stale');
+    if (ok) resolved++;
+  }
+
+  return { plane, resolved, total_stale: staleTensions.length };
+}
+
 // Production singleton backed by real ledger
 let _sentinel = null;
 function getSentinel() {
@@ -138,6 +157,7 @@ function scanPlane(plane, opts) {
 
 module.exports = {
   scanPlane,
+  autoResolve,
   _createForTesting: (ledger, getDb) => createSentinel(() => ledger, getDb),
 };
 

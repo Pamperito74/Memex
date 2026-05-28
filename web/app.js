@@ -165,6 +165,52 @@ async function loadDashboard() {
 
   // Load velocity
   await loadLearningVelocity();
+
+  // Load tension radar
+  await loadTensionRadar();
+
+  // Load consolidation status
+  await loadConsolidationStatus();
+}
+
+async function loadTensionRadar() {
+  const container = document.getElementById('tension-radar');
+  try {
+    const data = await api.get('/dashboard/tensions');
+    if (data.total === 0) {
+      container.innerHTML = '<div class="empty-state"><p>No contradictions detected</p></div>';
+      return;
+    }
+    const list = data.tensions.slice(0, 10).map(t => {
+      const date = t.detected_at ? t.detected_at.slice(0, 10) : '—';
+      const aClaim = t.a_claim ? esc(t.a_claim.substring(0, 80)) : '—';
+      const bClaim = t.b_claim ? esc(t.b_claim.substring(0, 80)) : '—';
+      return `<div class="tension-item">
+        <div class="tension-claims">
+          <span class="tension-claim">“${aClaim}”</span>
+          <span class="tension-vs">↯</span>
+          <span class="tension-claim">“${bClaim}”</span>
+        </div>
+        <div class="tension-meta">${esc(date)}</div>
+      </div>`;
+    }).join('');
+    container.innerHTML = `<div class="tension-list">${list}</div>
+      ${data.total > 10 ? `<div class="tension-more">+${data.total - 10} more</div>` : ''}`;
+  } catch {
+    container.innerHTML = '<div class="empty-state"><p>Tension data unavailable</p></div>';
+  }
+}
+
+async function loadConsolidationStatus() {
+  try {
+    const data = await api.get('/dashboard/consolidation');
+    const statusEl = document.getElementById('consolidation-status');
+    if (statusEl && data.last_run_at) {
+      const timeAgo = Math.floor((Date.now() - new Date(data.last_run_at).getTime()) / 1000);
+      const label = timeAgo < 60 ? 'just now' : timeAgo < 3600 ? `${Math.floor(timeAgo / 60)}m ago` : `${Math.floor(timeAgo / 3600)}h ago`;
+      statusEl.textContent = `Consolidated ${label}`;
+    }
+  } catch { /* ignore */ }
 }
 
 async function loadActivityFeed() {
@@ -192,13 +238,21 @@ async function loadActivityFeed() {
 }
 
 async function loadLearningVelocity() {
-  // Placeholder implementation
-  document.getElementById('stat-velocity-rate').textContent = '+2.4';
-  document.getElementById('velocity-chart').innerHTML = `
-    <div style="display:flex;align-items:flex-end;gap:2px;height:40px;width:100%">
-      ${[20, 30, 15, 40, 55, 35, 60].map(h => `<div style="flex:1;background:var(--accent);height:${h}%;border-radius:1px;opacity:0.6"></div>`).join('')}
-    </div>
-  `;
+  try {
+    const data = await api.get('/dashboard/velocity');
+    document.getElementById('stat-velocity-rate').textContent = '+' + data.rate;
+    const maxCount = Math.max(...data.history.map(h => h.count), 1);
+    const bars = data.history.map(h => {
+      const pct = (h.count / maxCount) * 100;
+      return `<div style="flex:1;background:var(--accent);height:${pct}%;border-radius:1px;opacity:0.6" title="${esc(h.day)}: ${h.count} facts"></div>`;
+    }).join('');
+    document.getElementById('velocity-chart').innerHTML = bars
+      ? `<div style="display:flex;align-items:flex-end;gap:2px;height:40px;width:100%">${bars}</div>`
+      : '<div style="color:var(--text-muted);font-size:11px">No data yet</div>';
+  } catch {
+    document.getElementById('stat-velocity-rate').textContent = '+0.0';
+    document.getElementById('velocity-chart').innerHTML = '<div style="color:var(--text-muted);font-size:11px">Unavailable</div>';
+  }
 }
 
 async function loadBridgeStatus() {

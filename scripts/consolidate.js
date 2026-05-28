@@ -136,6 +136,89 @@ async function consolidate(tasks, options = {}) {
     }
   }
 
+  if (tasks.counterfactual) {
+    log('Computing counterfactual weights...');
+    try {
+      const { computeWeights } = require('./counterfactual');
+      const ledger = require('./ledger');
+      const stats = ledger.stats();
+      for (const plane of Object.keys(stats.by_plane)) {
+        const result = computeWeights(plane);
+        log(`  Computed ${result.computed} weights for ${plane}`);
+      }
+      if (onUpdate) onUpdate('engram://stats');
+    } catch (e) {
+      log('Counterfactual computation failed: ' + e.message);
+    }
+  }
+
+  if (tasks.post_hoc) {
+    log('Running post-hoc feedback scoring...');
+    try {
+      const ledger = require('./ledger');
+      const db = ledger.getDb();
+      const { scoreReply } = require('./capture');
+      const sessions = db.prepare(
+        `SELECT DISTINCT sl.session_id FROM selection_log sl
+         LEFT JOIN assertion_outcomes ao ON ao.session_id = sl.session_id AND ao.signal_source = 'post_hoc'
+         WHERE ao.id IS NULL
+         LIMIT 20`
+      ).all();
+      if (sessions.length > 0) {
+        for (const { session_id } of sessions) {
+          try {
+            const result = await scoreReply(session_id, '', { db, embedFn: null });
+            if (result && result.scored > 0) {
+              log(`  Scored ${result.scored} assertions for session ${session_id}`);
+            }
+          } catch (e) {
+            log(`  Post-hoc scoring failed for ${session_id}: ${e.message}`);
+          }
+        }
+      } else {
+        log('  No pending sessions to score');
+      }
+      if (onUpdate) onUpdate('engram://stats');
+    } catch (e) {
+      log('Post-hoc feedback failed: ' + e.message);
+    }
+  }
+
+  if (tasks.auto_resolve) {
+    log('Auto-resolving stale tensions...');
+    try {
+      const ledger = require('./ledger');
+      const db = ledger.getDb();
+      const staleTensions = db.prepare(
+        `SELECT tp.a_id, tp.b_id, tp.detected_at
+         FROM tension_pairs tp
+         WHERE tp.resolved_at IS NULL
+           AND tp.detected_at < datetime('now', '-30 days')`
+      ).all();
+      if (staleTensions.length > 0) {
+        const now = new Date().toISOString();
+        const resolveStmt = db.prepare(
+          `UPDATE tension_pairs SET resolved_at = ?, resolution = ? WHERE a_id = ? AND b_id = ? AND resolved_at IS NULL`
+        );
+        const tx = db.transaction((rows) => {
+          for (const t of rows) {
+            resolveStmt.run(now, 'auto_resolved_stale', t.a_id, t.b_id);
+          }
+        });
+        tx(staleTensions);
+        log(`  Auto-resolved ${staleTensions.length} stale tensions`);
+        if (onUpdate) {
+          onUpdate('engram://ledger/tensions');
+          onUpdate('engram://stats');
+        }
+      } else {
+        log('  No stale tensions to resolve');
+      }
+    } catch (e) {
+      log('Auto-resolve failed: ' + e.message);
+    }
+  }
+
   if (tasks.embeddings) {
     log('Generating embeddings (this may take a while)...');
     if (isOnBattery() && !BATTERY_OK) {
@@ -147,9 +230,24 @@ async function consolidate(tasks, options = {}) {
         path.join(__dirname, 'vector-search.js'), 'generate',
       ], { cwd: ENGRAM_PATH, stdio: 'pipe' });
       log('Embeddings generated');
+      if (onUpdate) onUpdate('engram://stats');
     } catch (e) {
       log('Embedding generation failed: ' + e.message);
     }
+  }
+
+  persistConsolidationStats({ tasks, onUpdate });
+}
+
+function persistConsolidationStats({ tasks, onUpdate } = {}) {
+  try {
+    const fs = require('fs');
+    const statsPath = path.join(ENGRAM_PATH, '.cache', 'consolidation.json');
+    const stats = { last_run_at: new Date().toISOString(), tasks_run: Object.keys(tasks || {}).filter(k => tasks[k]), };
+    fs.mkdirSync(path.dirname(statsPath), { recursive: true });
+    fs.writeFileSync(statsPath, JSON.stringify(stats));
+  } catch (e) {
+    log('Failed to persist consolidation stats: ' + e.message);
   }
 }
 
@@ -173,6 +271,9 @@ function startWatcher(options = {}) {
         ledger_scan: true,
         ledger_verify: true,
         ledger_transform: true,
+        counterfactual: true,
+        post_hoc: true,
+        auto_resolve: true,
       }, { onUpdate });
     } catch (e) {
       log('Consolidation error: ' + e.message);
@@ -200,6 +301,9 @@ if (require.main === module) {
     ledger_scan: process.argv.includes('--scan') || process.argv.includes('--all'),
     ledger_verify: process.argv.includes('--verify') || process.argv.includes('--all'),
     ledger_transform: process.argv.includes('--transform') || process.argv.includes('--all'),
+    counterfactual: process.argv.includes('--counterfactual') || process.argv.includes('--all'),
+    post_hoc: process.argv.includes('--post-hoc') || process.argv.includes('--all'),
+    auto_resolve: process.argv.includes('--auto-resolve') || process.argv.includes('--all'),
   };
 
   if (process.argv.includes('--all')) {
@@ -208,6 +312,9 @@ if (require.main === module) {
     tasks.embeddings = true;
     tasks.ledger_scan = true;
     tasks.ledger_transform = true;
+    tasks.counterfactual = true;
+    tasks.post_hoc = true;
+    tasks.auto_resolve = true;
   }
 
   if (isWatcher) {
